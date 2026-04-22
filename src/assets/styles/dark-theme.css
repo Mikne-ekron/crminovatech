@@ -1,0 +1,111 @@
+/* =========================================
+   DYNAMIC THEME OVERRIDES
+   ========================================= */
+
+:root {
+    /* Default (Dark Blue) */
+    --canvas-bg: #111936;
+    --card-bg: #1A223F;
+    --border-color: #2e3852;
+    --text-primary: #ffffff;
+    --text-muted: #b2b9c5;
+    --hover-bg: #202a4d;
+}
+
+/* Override variables based on Vuetify theme class */
+.v-theme--BLUE_THEME {
+    --canvas-bg: #eef5f9;
+    --card-bg: #ffffff;
+    --border-color: #ebf1f6;
+    --text-primary: #3A4752;
+    --text-muted: #768B9E;
+    --hover-bg: #f6f9fc;
+}
+
+.v-theme--DARK_BLUE_THEME {
+    --canvas-bg: #111936;
+    --card-bg: #1A223F;
+    --border-color: #2e3852;
+    --text-primary: #ffffff;
+    --text-muted: #b2b9c5;
+    --hover-bg: #202a4d;
+}
+
+/* Fondo de la página */
+.bg-dark-canvas {
+    background-color: var(--canvas-bg) !important;
+    min-height: 100vh;
+}
+
+/* Tarjetas */
+.card-dark-blue {
+    background-color: var(--card-bg) !important;
+    color: var(--text-primary) !important;
+    border: 1px solid var(--border-color);
+}
+
+/* Headers de tarjetas */
+.header-dark-blue {
+    background-color: var(--card-bg) !important;
+    border-bottom: 1px solid var(--border-color);
+}
+
+/* Tablas (v-data-table) */
+.dark-table {
+    background-color: transparent !important;
+    color: var(--text-primary) !important;
+}
+
+.dark-table .v-data-table__th {
+    background-color: var(--card-bg) !important;
+    color: var(--text-muted) !important;
+    font-weight: bold !important;
+    border-bottom: 1px solid var(--border-color) !important;
+}
+
+.dark-table .v-data-table__td {
+    background-color: var(--card-bg) !important;
+    color: var(--text-primary) !important;
+    border-bottom: 1px solid var(--border-color) !important;
+}
+
+/* Hover en filas */
+.dark-table .v-data-table__tr:hover .v-data-table__td {
+    background-color: var(--hover-bg) !important;
+}
+
+/* Paginación / Footer de tabla */
+.dark-table .v-data-table-footer {
+    background-color: var(--card-bg) !important;
+    color: var(--text-muted) !important;
+    border-top: 1px solid var(--border-color) !important;
+}
+
+/* Inputs dentro de tarjetas oscuras (Búsqueda, Filtros) */
+.card-dark-blue .v-field {
+    background-color: var(--canvas-bg) !important;
+    color: var(--text-primary) !important;
+    border: 1px solid var(--border-color);
+}
+
+.card-dark-blue .v-label {
+    color: var(--text-muted) !important;
+}
+
+.card-dark-blue input {
+    color: var(--text-primary) !important;
+}
+
+/* Text Colors */
+.text-primary-dark {
+    color: #1B84FF !important; /* Primary color */
+}
+
+.text-light-muted {
+    color: var(--text-muted) !important;
+}
+
+/* Bordes */
+.border-b-dark {
+    border-bottom: 1px solid var(--border-color) !important;
+}
