@@ -79,10 +79,14 @@ export default defineConfig({
   },
   server: {
     port: 8098,
-    https: {
-      key: fs.readFileSync(path.resolve(__dirname, '../server/ssl/server.key')),
-      cert: fs.readFileSync(path.resolve(__dirname, '../server/ssl/server.crt')),
-    },
+    https: (() => {
+      const keyPath = path.resolve(__dirname, '../server/ssl/server.key');
+      const certPath = path.resolve(__dirname, '../server/ssl/server.crt');
+      if (fs.existsSync(keyPath) && fs.existsSync(certPath)) {
+        return { key: fs.readFileSync(keyPath), cert: fs.readFileSync(certPath) };
+      }
+      return false;
+    })(),
     host: true,
   },
 })
