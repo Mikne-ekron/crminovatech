@@ -311,6 +311,9 @@
                         variant="outlined"
                         hide-details
                         clearable
+                        multiple
+                        chips
+                        closable-chips
                     ></v-select>
                 </v-col>
 
@@ -466,7 +469,7 @@ const loading = ref(false);
 const pipeline = ref([]);
 const filters = ref({
     cliente: '',
-    vendedor: null,
+    vendedor: [],
     etapa: null,
     tipo: null,
     year: new Date().getFullYear().toString(),
@@ -580,7 +583,7 @@ const filteredPipeline = computed(() => {
             item.Cliente.toLowerCase().includes(filters.value.cliente.toLowerCase()) ||
             item.Folio.toString().includes(filters.value.cliente);
         
-        const matchVendedor = !filters.value.vendedor || item.Vendedor === filters.value.vendedor;
+        const matchVendedor = !filters.value.vendedor?.length || filters.value.vendedor.includes(item.Vendedor);
         const matchEtapa = !filters.value.etapa || item.Etapa === filters.value.etapa;
         const matchTipo = !filters.value.tipo || filters.value.tipo === 'Todos' || item.Tipo === filters.value.tipo;
         const matchPropietario = !filters.value.propietario || item.Propietario === filters.value.propietario;
