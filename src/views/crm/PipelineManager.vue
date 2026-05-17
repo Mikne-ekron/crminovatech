@@ -312,9 +312,26 @@
                         hide-details
                         clearable
                         multiple
-                        chips
-                        closable-chips
-                    ></v-select>
+                        class="vendedor-filter"
+                    >
+                        <template v-slot:selection="{ item, index }">
+                            <v-chip
+                                v-if="index === 0"
+                                size="x-small"
+                                class="vendedor-chip"
+                                closable
+                                @click:close="removeVendedor(item.value)"
+                            >
+                                <span class="text-truncate">{{ item.title }}</span>
+                            </v-chip>
+                            <span
+                                v-if="index === 1"
+                                class="text-caption text-medium-emphasis ml-1"
+                            >
+                                +{{ filters.vendedor.length - 1 }}
+                            </span>
+                        </template>
+                    </v-select>
                 </v-col>
 
                 <v-col cols="12" sm="6" md="2">
@@ -745,6 +762,10 @@ const getSentimentColor = (sentiment) => {
     }
 };
 
+const removeVendedor = (value) => {
+    filters.value.vendedor = filters.value.vendedor.filter(v => v !== value);
+};
+
 const getSentimentIcon = (sentiment) => {
     switch (sentiment) {
         case 'Caliente': return 'mdi-fire';
@@ -807,5 +828,17 @@ onMounted(() => {
 
 .bg-light-grey {
     background-color: #f8f9fa;
+}
+
+/* Filtro Vendedor: chip unico + "+N", evita que el campo crezca con multiples selecciones */
+.vendedor-filter :deep(.v-field__input) {
+    flex-wrap: nowrap;
+    overflow: hidden;
+}
+.vendedor-filter :deep(.vendedor-chip) {
+    max-width: calc(100% - 40px);
+}
+.vendedor-filter :deep(.vendedor-chip .v-chip__content) {
+    overflow: hidden;
 }
 </style>
