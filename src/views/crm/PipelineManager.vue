@@ -75,181 +75,6 @@
       </v-col>
     </v-row>
 
-    <!-- Detailed View Sidebar (Similar to Prospects) -->
-    <v-navigation-drawer
-      v-model="showDetail"
-      location="right"
-      temporary
-      width="450"
-      class="pa-0"
-    >
-      <template v-if="selectedItem">
-        <div class="pa-4 bg-primary text-white d-flex align-center">
-            <h3 class="text-h6 text-truncate">Folio: {{ selectedItem.Folio }}</h3>
-            <v-spacer></v-spacer>
-            <v-btn icon="mdi-close" variant="text" color="white" @click="showDetail = false"></v-btn>
-        </div>
-        
-        <v-tabs v-model="activeTab" color="primary" grow>
-          <v-tab value="info">Detalle</v-tab>
-          <v-tab value="timeline">Seguimiento</v-tab>
-        </v-tabs>
-
-        <v-window v-model="activeTab" class="pa-4">
-          <!-- Info Tab -->
-          <v-window-item value="info">
-            <div class="info-section mb-6">
-                <p class="text-caption text-uppercase font-weight-bold grey--text text--darken-1 mb-1">Datos SAP</p>
-                <div class="d-flex justify-space-between mb-2">
-                    <span class="text-body-2">Cliente:</span>
-                    <span class="text-body-2 font-weight-bold text-right ml-4">{{ selectedItem.Cliente }}</span>
-                </div>
-                <div class="d-flex justify-space-between mb-2">
-                    <span class="text-body-2">Vendedor:</span>
-                    <span class="text-body-2 font-weight-bold">{{ selectedItem.Vendedor }}</span>
-                </div>
-                <div class="d-flex justify-space-between mb-2">
-                    <span class="text-body-2">Monto:</span>
-                    <span class="text-body-2 font-weight-bold">
-                        {{ selectedItem.Moneda === 'USD' ? formatCurrency(selectedItem.MontoUSD, 'USD') : formatCurrency(selectedItem.Monto, 'MXN') }}
-                        <span v-if="selectedItem.Moneda === 'USD'" class="text-caption text-disabled ml-1">
-                            ({{ formatCurrency(selectedItem.Monto, 'MXN') }} aprox)
-                        </span>
-                    </span>
-                </div>
-            </div>
-
-            <div class="info-section">
-                <p class="text-caption text-uppercase font-weight-bold grey--text text--darken-1 mb-1">Control CRM</p>
-                <v-select
-                    v-model="selectedItem.Tipo"
-                    :items="['Proyecto', 'Transaccional']"
-                    label="Tipo de Venta"
-                    variant="outlined"
-                    density="compact"
-                    class="mb-2"
-                    @update:model-value="updateControl"
-                ></v-select>
-                <v-select
-                    v-model="selectedItem.Etapa"
-                    :items="stageOptions"
-                    label="Etapa"
-                    variant="outlined"
-                    density="compact"
-                    class="mb-2"
-                    @update:model-value="updateControl"
-                ></v-select>
-                <v-select
-                    v-model="selectedItem.Sentimiento"
-                    :items="['Caliente', 'Tibio', 'Frio']"
-                    label="Sentimiento"
-                    variant="outlined"
-                    density="compact"
-                    class="mb-2"
-                    @update:model-value="updateControl"
-                >
-                    <template v-slot:item="{ props, item }">
-                        <v-list-item v-bind="props">
-                            <template v-slot:prepend>
-                                <v-icon :color="getSentimentColor(item.value)">mdi-fire</v-icon>
-                            </template>
-                        </v-list-item>
-                    </template>
-                </v-select>
-                <v-text-field
-                    v-model="selectedItem.ProximaAccion"
-                    label="Próxima Acción"
-                    variant="outlined"
-                    density="compact"
-                    @blur="updateControl"
-                ></v-text-field>
-            </div>
-          </v-window-item>
-
-          <!-- Timeline Tab -->
-          <v-window-item value="timeline">
-            <v-textarea
-                v-model="newComment"
-                label="Registrar acción/comentario"
-                variant="outlined"
-                density="compact"
-                rows="2"
-                hide-details
-                class="mb-2"
-                @keyup.enter="saveComment"
-            ></v-textarea>
-            
-            <div class="d-flex align-center mb-4">
-                <v-text-field
-                    v-model="followUpDate"
-                    label="Fecha Seguimiento"
-                    type="date"
-                    variant="underlined"
-                    density="compact"
-                    hide-details
-                    prepend-inner-icon="mdi-calendar-clock"
-                    class="text-caption"
-                ></v-text-field>
-                <v-btn color="primary" class="ml-4" size="small" :disabled="!newComment" @click="saveComment" :loading="logLoading">Registrar</v-btn>
-            </div>
-
-            <div class="d-flex align-center mb-2">
-                <v-btn
-                    v-if="!m365Connected"
-                    variant="text"
-                    color="info"
-                    size="x-small"
-                    prepend-icon="mdi-microsoft-office"
-                    @click="connectM365"
-                    class="px-0"
-                >
-                    Conectar Microsoft To Do
-                </v-btn>
-                <v-chip v-else color="success" size="x-small" variant="tonal" prepend-icon="mdi-check">
-                    M365 Conectado
-                </v-chip>
-                <v-spacer></v-spacer>
-            </div>
-
-            <v-alert
-                v-if="m365Error"
-                type="warning"
-                variant="tonal"
-                density="compact"
-                class="mt-2 text-caption"
-                closable
-                @click:close="m365Error = false"
-            >
-                Error de sincronización To Do. Por favor, <strong>reconecta</strong>.
-            </v-alert>
-
-            <v-divider class="my-4"></v-divider>
-
-            <v-timeline side="end" align="start" density="compact">
-              <v-timeline-item
-                v-for="(log, i) in logs"
-                :key="i"
-                :dot-color="log.Type === 'comment' ? 'info' : 'success'"
-                size="x-small"
-              >
-                <div class="d-flex justify-space-between align-center mb-1">
-                  <span class="text-caption font-weight-bold">{{ log.Author }}</span>
-                  <span class="text-caption text-disabled">{{ formatDate(log.Date) }}</span>
-                </div>
-                <div class="text-body-2 mb-1">{{ log.Text }}</div>
-                <div v-if="log.FollowUpDate" class="text-caption text-warning font-weight-bold">
-                    📅 Recordatorio: {{ new Date(log.FollowUpDate).toLocaleDateString() }}
-                </div>
-              </v-timeline-item>
-              <div v-if="logs.length === 0" class="text-center text-caption text-disabled py-4">
-                No hay historial registrado.
-              </div>
-            </v-timeline>
-          </v-window-item>
-        </v-window>
-      </template>
-    </v-navigation-drawer>
-
     <v-card elevation="0" class="border">
         <v-card-text class="pb-0" style="background: rgba(var(--v-theme-surface-variant), 0.05)">
             <!-- Row 1: Búsqueda Global -->
@@ -383,12 +208,12 @@
             :loading="loading"
             class="elevation-0"
             hover
-            @click:row="(e, { item }) => openDetail(item)"
+            @click:row="(e, { item }) => openQuoteDialog(item)"
         >
             <template v-slot:item.Folio="{ item }">
-                <span 
+                <span
                     class="text-primary font-weight-black cursor-pointer folio-link"
-                    @click.stop="openQuoteDialog(item.Folio)"
+                    @click.stop="openQuoteDialog(item)"
                 >
                     #{{ item.Folio }}
                 </span>
@@ -452,14 +277,16 @@
             </template>
 
              <template v-slot:item.actions="{ item }">
-                <v-btn icon="mdi-eye" size="x-small" variant="text" color="primary" @click.stop="openQuoteDialog(item.Folio)"></v-btn>
+                <v-btn icon="mdi-eye" size="x-small" variant="text" color="primary" @click.stop="openQuoteDialog(item)"></v-btn>
              </template>
         </v-data-table>
 
-        <QuoteDetailDialog 
-            v-model="showQuoteDialog" 
-            :folio="selectedFolio" 
+        <QuoteDetailDialog
+            v-model="showQuoteDialog"
+            :folio="selectedFolio"
+            :item="selectedItem"
             @open-customer-history="handleOpenHistory"
+            @update:item="onItemUpdated"
         />
 
         <CustomerQuotesDialog
@@ -477,9 +304,6 @@ import { ref, computed, onMounted } from 'vue';
 import axios from '@/utils/axios';
 import QuoteDetailDialog from '@/components/crm/QuoteDetailDialog.vue';
 import CustomerQuotesDialog from '@/components/crm/CustomerQuotesDialog.vue';
-import { useAuthStore } from '@/stores/auth';
-
-const authStore = useAuthStore();
 
 const loading = ref(false);
 
@@ -511,57 +335,12 @@ const monthOptions = [
     { text: 'Diciembre', value: '12' },
 ];
 
-const showDetail = ref(false);
 const showQuoteDialog = ref(false);
 const showHistoryDialog = ref(false);
 const selectedFolio = ref(null);
+const selectedItem = ref(null);
 const selectedCardCode = ref('');
 const selectedCustomerName = ref('');
-const selectedItem = ref(null);
-const activeTab = ref('info');
-const logs = ref([]);
-const newComment = ref('');
-const getToday = () => new Date().toISOString().split('T')[0];
-const followUpDate = ref(getToday());
-const logLoading = ref(false);
-const m365Connected = ref(false);
-const m365Error = ref(false);
-
-const checkM365Status = async () => {
-    try {
-        const res = await axios.get('/m365/status');
-        m365Connected.value = res.data.connected;
-    } catch (err) {
-        console.error('Error checking M365 status:', err);
-    }
-};
-
-const connectM365 = () => {
-    m365Error.value = false;
-    const token = localStorage.getItem('token');
-    let uid = '';
-    if (token) {
-        try {
-            const payload = JSON.parse(atob(token.split('.')[1]));
-            uid = payload.uid;
-        } catch (e) { console.error('Error parsing token', e); }
-    }
-    if (!uid) return alert('Debes iniciar sesión');
-
-    const width = 600;
-    const height = 700;
-    const left = window.screen.width / 2 - width / 2;
-    const top = window.screen.height / 2 - height / 2;
-    
-    const handleMessage = (event) => {
-        if (event.data.type === 'm365_connected') {
-            m365Connected.value = true;
-            window.removeEventListener('message', handleMessage);
-        }
-    };
-    window.addEventListener('message', handleMessage);
-    window.open(`${axios.defaults.baseURL}/m365/login?uid=${uid}`, 'M365Auth', `width=${width},height=${height},left=${left},top=${top}`);
-};
 
 const handleOpenHistory = (data) => {
     selectedCardCode.value = data.cardCode;
@@ -664,68 +443,17 @@ const fetchPipeline = async () => {
     }
 };
 
-const openDetail = async (item) => {
+const openQuoteDialog = (item) => {
     selectedItem.value = item;
-    showDetail.value = true;
-    fetchLogs(item.Folio);
-    checkM365Status();
-};
-
-const openQuoteDialog = (folio) => {
-    selectedFolio.value = folio;
+    selectedFolio.value = item.Folio;
     showQuoteDialog.value = true;
 };
 
-const fetchLogs = async (folio) => {
-    try {
-        const response = await axios.get(`/crm/pipeline/logs/${folio}`);
-        logs.value = response.data;
-    } catch (error) {
-        console.error("Error bscar logs:", error);
-    }
-};
-
-const saveComment = async () => {
-    if (!newComment.value || !selectedItem.value) return;
-    logLoading.value = true;
-    try {
-        const response = await axios.post('/crm/pipeline/logs', {
-            Folio: selectedItem.value.Folio,
-            Text: newComment.value,
-            Type: 'comment',
-            FollowUpDate: followUpDate.value,
-            CardName: selectedItem.value.Cliente
-        });
-        
-        if (response.data.m365Error) {
-            m365Error.value = true;
-            if (response.data.m365Error === 'InvalidAuthenticationToken' || response.data.m365Error.includes('401')) {
-                m365Connected.value = false;
-            }
-        }
-
-        newComment.value = '';
-        followUpDate.value = getToday();
-        fetchLogs(selectedItem.value.Folio);
-    } catch (error) {
-        console.error("Error al guardar comentario:", error);
-    } finally {
-        logLoading.value = false;
-    }
-};
-
-const updateControl = async () => {
-    if (!selectedItem.value) return;
-    try {
-        await axios.post('/crm/pipeline/control', {
-            Folio: selectedItem.value.Folio,
-            Tipo: selectedItem.value.Tipo,
-            Etapa: selectedItem.value.Etapa,
-            ProximaAccion: selectedItem.value.ProximaAccion,
-            Sentimiento: selectedItem.value.Sentimiento
-        });
-    } catch (error) {
-        console.error("Error al actualizar control:", error);
+const onItemUpdated = (updated) => {
+    const idx = pipeline.value.findIndex(p => p.Folio === updated.Folio);
+    if (idx !== -1) {
+        pipeline.value[idx] = { ...pipeline.value[idx], ...updated };
+        selectedItem.value = pipeline.value[idx];
     }
 };
 
@@ -734,11 +462,6 @@ const formatCurrency = (value, currency) => {
         style: 'currency', 
         currency: currency || 'MXN' 
     }).format(value);
-};
-
-const formatDate = (dateString) => {
-    if (!dateString) return '';
-    return new Date(dateString).toLocaleString('es-MX');
 };
 
 const formatDateShort = (dateString) => {
@@ -781,12 +504,6 @@ onMounted(() => {
 </script>
 
 <style scoped>
-.info-section {
-    padding: 12px;
-    border-radius: 8px;
-    background: rgba(var(--v-theme-surface-variant), 0.05);
-}
-
 .folio-link {
     transition: all 0.2s ease;
     border-bottom: 2px solid transparent;

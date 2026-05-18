@@ -169,6 +169,69 @@
               </v-data-table>
             </v-card>
 
+            <!-- Control CRM -->
+            <v-card elevation="0" class="mb-4 rounded-lg border overflow-hidden" color="surface">
+                <div class="py-2 px-4 d-flex align-center border-b bg-lightprimary" style="min-height: 40px;">
+                    <v-icon start color="primary" size="18">mdi-tune-vertical</v-icon>
+                    <span class="font-weight-black text-primary" style="font-size: 0.75rem; letter-spacing: 0.05rem;">CONTROL CRM</span>
+                </div>
+                <v-card-text class="pa-4">
+                    <v-row dense>
+                        <v-col cols="12" sm="6">
+                            <v-select
+                                v-model="control.Tipo"
+                                :items="tipoOptions"
+                                label="Tipo de Venta"
+                                variant="outlined"
+                                density="compact"
+                                hide-details
+                                @update:model-value="updateControl"
+                            ></v-select>
+                        </v-col>
+                        <v-col cols="12" sm="6">
+                            <v-select
+                                v-model="control.Etapa"
+                                :items="stageOptions"
+                                label="Etapa"
+                                variant="outlined"
+                                density="compact"
+                                hide-details
+                                @update:model-value="updateControl"
+                            ></v-select>
+                        </v-col>
+                        <v-col cols="12" sm="6">
+                            <v-select
+                                v-model="control.Sentimiento"
+                                :items="sentimentOptions"
+                                label="Sentimiento"
+                                variant="outlined"
+                                density="compact"
+                                hide-details
+                                @update:model-value="updateControl"
+                            >
+                                <template v-slot:item="{ props: itemProps, item }">
+                                    <v-list-item v-bind="itemProps">
+                                        <template v-slot:prepend>
+                                            <v-icon :color="getSentimentColor(item.value)">mdi-fire</v-icon>
+                                        </template>
+                                    </v-list-item>
+                                </template>
+                            </v-select>
+                        </v-col>
+                        <v-col cols="12" sm="6">
+                            <v-text-field
+                                v-model="control.ProximaAccion"
+                                label="Próxima Acción"
+                                variant="outlined"
+                                density="compact"
+                                hide-details
+                                @blur="updateControl"
+                            ></v-text-field>
+                        </v-col>
+                    </v-row>
+                </v-card-text>
+            </v-card>
+
             <!-- Cronological Timeline -->
             <v-card elevation="0" class="rounded-lg border" color="surface">
                 <div class="py-2 px-4 d-flex align-center border-b bg-lightprimary" style="min-height: 40px;">
@@ -280,9 +343,65 @@ const activeLogo = computed(() => isDark.value ? LogoLight : LogoDark);
 
 const props = defineProps({
     modelValue: Boolean,
-    folio: [Number, String]
+    folio: [Number, String],
+    item: { type: Object, default: null }
 });
-const emit = defineEmits(['update:modelValue', 'open-customer-history']);
+const emit = defineEmits(['update:modelValue', 'open-customer-history', 'update:item']);
+
+const stageOptions = [
+    '1. Dimensionamiento',
+    '2. Negociación',
+    '3. Aprobado/OC',
+    '4. Colocado',
+    '5. Perdida'
+];
+
+const sentimentOptions = ['Caliente', 'Tibio', 'Frio'];
+const tipoOptions = ['Proyecto', 'Transaccional'];
+
+const control = ref({
+    Tipo: null,
+    Etapa: null,
+    Sentimiento: null,
+    ProximaAccion: ''
+});
+
+const syncControlFromItem = () => {
+    if (!props.item) return;
+    control.value = {
+        Tipo: props.item.Tipo ?? null,
+        Etapa: props.item.Etapa ?? null,
+        Sentimiento: props.item.Sentimiento ?? null,
+        ProximaAccion: props.item.ProximaAccion ?? ''
+    };
+};
+
+watch(() => props.item, syncControlFromItem, { immediate: true, deep: true });
+
+const updateControl = async () => {
+    if (!props.folio) return;
+    try {
+        await axios.post('/crm/pipeline/control', {
+            Folio: props.folio,
+            Tipo: control.value.Tipo,
+            Etapa: control.value.Etapa,
+            ProximaAccion: control.value.ProximaAccion,
+            Sentimiento: control.value.Sentimiento
+        });
+        emit('update:item', { ...props.item, ...control.value });
+    } catch (error) {
+        console.error("Error al actualizar control:", error);
+    }
+};
+
+const getSentimentColor = (sentiment) => {
+    switch (sentiment) {
+        case 'Caliente': return 'error';
+        case 'Tibio': return 'orange';
+        case 'Frio': return 'info';
+        default: return 'grey';
+    }
+};
 
 const internalModel = ref(props.modelValue);
 const loading = ref(false);
