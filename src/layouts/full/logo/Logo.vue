@@ -26,9 +26,9 @@ const altText = computed(() => companyStore.company?.label || 'Logo');
 
 <style scoped>
 .company-logo {
-    height: 40px;
+    height: 56px;
     width: auto;
-    max-width: 180px;
+    max-width: 220px;
     object-fit: contain;
     display: block;
 }

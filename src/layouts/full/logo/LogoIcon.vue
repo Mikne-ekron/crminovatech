@@ -19,7 +19,7 @@ const altText = computed(() => companyStore.company?.label || 'Logo');
 <template>
     <div class="logo">
         <RouterLink to="/">
-            <img :src="logoSrc" :alt="altText" style="height: 32px; width: auto; max-width: 120px; object-fit: contain;" />
+            <img :src="logoSrc" :alt="altText" style="height: 44px; width: auto; max-width: 160px; object-fit: contain;" />
         </RouterLink>
     </div>
 </template>
