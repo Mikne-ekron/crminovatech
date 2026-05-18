@@ -13,7 +13,16 @@
           Detalle de Cotización: #{{ folio }}
         </v-toolbar-title>
         <v-spacer></v-spacer>
-        <v-btn variant="tonal" color="primary" prepend-icon="mdi-printer" class="mr-2">Imprimir SAP</v-btn>
+        <v-btn
+            variant="tonal"
+            color="primary"
+            prepend-icon="mdi-printer"
+            class="mr-2"
+            :disabled="!folio"
+            @click="openPrintView"
+        >
+            Imprimir
+        </v-btn>
         <v-btn variant="flat" color="primary" prepend-icon="mdi-check-circle">Aprobar</v-btn>
       </v-toolbar>
 
@@ -169,6 +178,164 @@
               </v-data-table>
             </v-card>
 
+            <!-- Oportunidad -->
+            <v-card elevation="0" class="mb-4 rounded-lg border overflow-hidden" color="surface">
+                <div class="py-2 px-4 d-flex align-center border-b bg-lightprimary" style="min-height: 40px;">
+                    <v-icon start color="primary" size="18">mdi-target</v-icon>
+                    <span class="font-weight-black text-primary" style="font-size: 0.75rem; letter-spacing: 0.05rem;">OPORTUNIDAD</span>
+                </div>
+                <v-card-text class="pa-4">
+                    <div v-if="item?.OpportunityID" class="d-flex align-center">
+                        <v-chip color="success" variant="tonal" prepend-icon="mdi-link-variant">
+                            Vinculada a #{{ item.OpportunityID }} — {{ item.OpportunityName || 'Oportunidad' }}
+                        </v-chip>
+                        <v-spacer></v-spacer>
+                        <v-btn
+                            size="small"
+                            variant="text"
+                            color="primary"
+                            prepend-icon="mdi-open-in-new"
+                            @click="goToOpportunity"
+                        >
+                            Abrir oportunidad
+                        </v-btn>
+                    </div>
+                    <div v-else class="d-flex align-center">
+                        <span class="text-body-2 text-medium-emphasis">
+                            Esta cotización no pertenece a ninguna oportunidad.
+                        </span>
+                        <v-spacer></v-spacer>
+                        <v-btn
+                            color="primary"
+                            variant="flat"
+                            size="small"
+                            prepend-icon="mdi-plus"
+                            @click="openCreateOpp"
+                            :disabled="!item?.CardCode"
+                        >
+                            Crear / Unificar
+                        </v-btn>
+                    </div>
+                </v-card-text>
+            </v-card>
+
+            <!-- Control CRM -->
+            <v-card elevation="0" class="mb-4 rounded-lg border overflow-hidden" color="surface">
+                <div class="py-2 px-4 d-flex align-center border-b bg-lightprimary" style="min-height: 40px;">
+                    <v-icon start color="primary" size="18">mdi-tune-vertical</v-icon>
+                    <span class="font-weight-black text-primary" style="font-size: 0.75rem; letter-spacing: 0.05rem;">CONTROL CRM</span>
+                </div>
+                <v-card-text class="pa-4">
+                    <v-row dense>
+                        <v-col cols="12" sm="6">
+                            <v-select
+                                v-model="control.Tipo"
+                                :items="tipoOptions"
+                                label="Tipo de Venta"
+                                variant="outlined"
+                                density="compact"
+                                hide-details
+                                @update:model-value="updateControl"
+                            ></v-select>
+                        </v-col>
+                        <v-col cols="12" sm="6">
+                            <v-select
+                                v-model="control.Etapa"
+                                :items="stageOptions"
+                                label="Etapa"
+                                variant="outlined"
+                                density="compact"
+                                hide-details
+                                @update:model-value="updateControl"
+                            ></v-select>
+                        </v-col>
+                        <v-col cols="12" sm="6">
+                            <v-select
+                                v-model="control.Sentimiento"
+                                :items="sentimentOptions"
+                                label="Sentimiento"
+                                variant="outlined"
+                                density="compact"
+                                hide-details
+                                @update:model-value="updateControl"
+                            >
+                                <template v-slot:item="{ props: itemProps, item }">
+                                    <v-list-item v-bind="itemProps">
+                                        <template v-slot:prepend>
+                                            <v-icon :color="getSentimentColor(item.value)">mdi-fire</v-icon>
+                                        </template>
+                                    </v-list-item>
+                                </template>
+                            </v-select>
+                        </v-col>
+                        <v-col cols="12" sm="6">
+                            <v-text-field
+                                v-model="control.ProximaAccion"
+                                label="Próxima Acción"
+                                variant="outlined"
+                                density="compact"
+                                hide-details
+                                @blur="updateControl"
+                            ></v-text-field>
+                        </v-col>
+                        <v-col cols="12" sm="6">
+                            <v-text-field
+                                v-model="control.FechaCierre"
+                                type="date"
+                                label="Fecha de Cierre Estimada"
+                                variant="outlined"
+                                density="compact"
+                                hide-details
+                                prepend-inner-icon="mdi-calendar-check"
+                                clearable
+                                @update:model-value="updateControl"
+                            ></v-text-field>
+                        </v-col>
+
+                        <!-- Campos condicionales cuando Etapa = Perdida -->
+                        <template v-if="showPerdidaFields">
+                            <v-col cols="12" sm="6">
+                                <v-select
+                                    v-model="control.MotivoPerdida"
+                                    :items="motivoPerdidaOptions"
+                                    label="Motivo de pérdida"
+                                    variant="outlined"
+                                    density="compact"
+                                    hide-details
+                                    color="error"
+                                    prepend-inner-icon="mdi-alert-octagon-outline"
+                                    @update:model-value="updateControl"
+                                ></v-select>
+                            </v-col>
+                            <v-col cols="12" sm="6" v-if="showSeguimientoField">
+                                <v-text-field
+                                    v-model="control.FechaSeguimiento"
+                                    type="date"
+                                    label="Próximo seguimiento"
+                                    variant="outlined"
+                                    density="compact"
+                                    hide-details
+                                    prepend-inner-icon="mdi-calendar-clock"
+                                    @update:model-value="updateControl"
+                                ></v-text-field>
+                            </v-col>
+                            <v-col cols="12" v-if="showComentarioField">
+                                <v-textarea
+                                    v-model="control.ComentarioPerdida"
+                                    label="Comentario del vendedor"
+                                    variant="outlined"
+                                    density="compact"
+                                    hide-details
+                                    rows="2"
+                                    auto-grow
+                                    @blur="updateControl"
+                                ></v-textarea>
+                            </v-col>
+                        </template>
+                    </v-row>
+                </v-card-text>
+            </v-card>
+
             <!-- Cronological Timeline -->
             <v-card elevation="0" class="rounded-lg border" color="surface">
                 <div class="py-2 px-4 d-flex align-center border-b bg-lightprimary" style="min-height: 40px;">
@@ -262,6 +429,14 @@
           </v-col>
         </v-row>
       </v-container>
+
+      <CreateOpportunityDialog
+        v-model="showCreateOpp"
+        :card-code="item?.CardCode"
+        :customer-name="item?.Cliente"
+        :initial-folio="folio"
+        @created="onOpportunityCreated"
+      />
     </v-card>
   </v-dialog>
 </template>
@@ -272,6 +447,12 @@ import axios from '@/utils/axios';
 import LogoLight from '@/assets/images/logos/logolight.svg';
 import LogoDark from '@/assets/images/logos/logo-blue.png';
 import { useCustomizerStore } from '@/stores/customizer';
+import CreateOpportunityDialog from '@/components/crm/CreateOpportunityDialog.vue';
+import { useRouter } from 'vue-router';
+import {
+    stageOptions, motivoPerdidaOptions,
+    isPerdida, requiresSeguimiento, requiresComentario
+} from '@/config/crmStages';
 
 
 const customizer = useCustomizerStore();
@@ -280,9 +461,108 @@ const activeLogo = computed(() => isDark.value ? LogoLight : LogoDark);
 
 const props = defineProps({
     modelValue: Boolean,
-    folio: [Number, String]
+    folio: [Number, String],
+    item: { type: Object, default: null }
 });
-const emit = defineEmits(['update:modelValue', 'open-customer-history']);
+const emit = defineEmits(['update:modelValue', 'open-customer-history', 'update:item']);
+
+const router = useRouter();
+const showCreateOpp = ref(false);
+
+const openCreateOpp = () => {
+    showCreateOpp.value = true;
+};
+
+const onOpportunityCreated = (data) => {
+    // Vincular esta cotización al opp creado y avisar al padre
+    emit('update:item', { ...props.item, OpportunityID: data.OpportunityID });
+    router.push(`/app/crm/opportunities/${data.OpportunityID}`);
+    internalModel.value = false;
+};
+
+const goToOpportunity = () => {
+    if (props.item?.OpportunityID) {
+        router.push(`/app/crm/opportunities/${props.item.OpportunityID}`);
+        internalModel.value = false;
+    }
+};
+
+const openPrintView = () => {
+    if (!props.folio) return;
+    // Abrir en nueva pestaña para no perder el contexto del pipeline
+    const url = router.resolve({ name: 'PrintQuote', params: { folio: props.folio } }).href;
+    window.open(url, '_blank', 'noopener');
+};
+
+const sentimentOptions = ['Caliente', 'Tibio', 'Frio'];
+const tipoOptions = ['Proyecto', 'Transaccional'];
+
+const control = ref({
+    Tipo: null,
+    Etapa: null,
+    Sentimiento: null,
+    ProximaAccion: '',
+    FechaCierre: null,
+    MotivoPerdida: null,
+    ComentarioPerdida: '',
+    FechaSeguimiento: null
+});
+
+const showPerdidaFields = computed(() => isPerdida(control.value.Etapa));
+const showSeguimientoField = computed(() => showPerdidaFields.value && requiresSeguimiento(control.value.MotivoPerdida));
+const showComentarioField = computed(() => showPerdidaFields.value && requiresComentario(control.value.MotivoPerdida));
+
+const toDateInputValue = (d) => {
+    if (!d) return null;
+    const date = new Date(d);
+    if (isNaN(date)) return null;
+    return date.toISOString().slice(0, 10);
+};
+
+const syncControlFromItem = () => {
+    if (!props.item) return;
+    control.value = {
+        Tipo: props.item.Tipo ?? null,
+        Etapa: props.item.Etapa ?? null,
+        Sentimiento: props.item.Sentimiento ?? null,
+        ProximaAccion: props.item.ProximaAccion ?? '',
+        FechaCierre: toDateInputValue(props.item.FechaCierre),
+        MotivoPerdida: props.item.MotivoPerdida ?? null,
+        ComentarioPerdida: props.item.ComentarioPerdida ?? '',
+        FechaSeguimiento: toDateInputValue(props.item.FechaSeguimiento)
+    };
+};
+
+watch(() => props.item, syncControlFromItem, { immediate: true, deep: true });
+
+const updateControl = async () => {
+    if (!props.folio) return;
+    try {
+        await axios.post('/crm/pipeline/control', {
+            Folio: props.folio,
+            Tipo: control.value.Tipo,
+            Etapa: control.value.Etapa,
+            ProximaAccion: control.value.ProximaAccion,
+            Sentimiento: control.value.Sentimiento,
+            FechaCierre: control.value.FechaCierre,
+            MotivoPerdida: control.value.MotivoPerdida,
+            ComentarioPerdida: control.value.ComentarioPerdida,
+            FechaSeguimiento: control.value.FechaSeguimiento
+        });
+        emit('update:item', { ...props.item, ...control.value });
+    } catch (error) {
+        console.error("Error al actualizar control:", error);
+    }
+};
+
+const getSentimentColor = (sentiment) => {
+    switch (sentiment) {
+        case 'Caliente': return 'error';
+        case 'Tibio': return 'orange';
+        case 'Frio': return 'info';
+        default: return 'grey';
+    }
+};
 
 const internalModel = ref(props.modelValue);
 const loading = ref(false);

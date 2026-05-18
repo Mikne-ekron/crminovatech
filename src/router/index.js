@@ -139,8 +139,31 @@ const routes = [
         path: 'crm/commercial-management',
         name: 'CommercialManagement',
         component: () => import('@/views/crm/CommercialManagement.vue')
+      },
+      {
+        path: 'crm/opportunities',
+        name: 'OpportunityList',
+        component: () => import('@/views/crm/OpportunityList.vue')
+      },
+      {
+        path: 'crm/opportunities/:id',
+        name: 'OpportunityDetail',
+        component: () => import('@/views/crm/OpportunityDetail.vue')
+      },
+      {
+        path: 'crm/backlog',
+        name: 'BacklogManager',
+        component: () => import('@/views/crm/BacklogManager.vue')
       }
     ]
+  },
+
+  // Vista de impresión (fuera del MainLayout para ocupar toda la pantalla)
+  {
+    path: '/print/quote/:folio',
+    name: 'PrintQuote',
+    component: () => import('@/views/crm/PrintQuote.vue'),
+    meta: { requiresAuth: true }
   },
 
   // 3. COMODÍN (404)
