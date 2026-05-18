@@ -7,7 +7,6 @@ import { defineStore } from 'pinia';
 
 import inovatechLogoLight from '@/assets/images/logos/companies/inovatech-light.svg';
 import inovatechLogoDark from '@/assets/images/logos/companies/inovatech-dark.svg';
-import mikneLogoLight from '@/assets/images/logos/companies/mikne-light.png';
 import mikneLogoDark from '@/assets/images/logos/companies/mikne-dark.png';
 import logLogoLight from '@/assets/images/logos/companies/log-light.svg';
 import logLogoDark from '@/assets/images/logos/companies/log-dark.svg';
@@ -29,7 +28,8 @@ export const COMPANIES = [
         shortLabel: 'Mikne',
         themeLight: 'MIKNE_LIGHT',
         themeDark: 'MIKNE_DARK',
-        logoLight: mikneLogoLight,
+        // Mikne usa el mismo logo blanco en ambos modos por preferencia de marca.
+        logoLight: mikneLogoDark,
         logoDark: mikneLogoDark,
         color: '#0066CC'
     },
