@@ -96,6 +96,7 @@ import { ref, computed, onMounted, watch } from 'vue';
 import { useAuthStore } from '@/stores/auth';
 import { useRouter } from 'vue-router';
 import { useCustomizerStore } from '@/stores/customizer';
+import { useCompanyStore } from '@/stores/company';
 import VerticalHeaderVue from './full/vertical-header/VerticalHeader.vue';
 import SidebarProfile from '@/components/shared/SidebarProfile.vue';
 import { Icon } from '@iconify/vue';
@@ -107,7 +108,19 @@ import { useTheme } from 'vuetify';
 const authStore = useAuthStore();
 const router = useRouter();
 const customizer = useCustomizerStore();
+const companyStore = useCompanyStore();
 const theme = useTheme();
+
+// Tema activo: combina empresa actual + modo (light/dark del usuario).
+// Si actTheme termina en DARK -> usar variante dark de la empresa, sino light.
+const isDarkMode = computed(() =>
+    (customizer.actTheme || '').toUpperCase().includes('DARK')
+);
+const effectiveTheme = computed(() => {
+    const c = companyStore.company;
+    if (!c) return customizer.actTheme;
+    return isDarkMode.value ? c.themeDark : c.themeLight;
+});
 
 // Images
 const userInfoBg = userInfoBgImage;
@@ -119,10 +132,18 @@ const drawer = computed({
   set: (val) => customizer.Sidebar_drawer = val
 });
 
-// Watch para el cambio de tema
-watch(() => customizer.actTheme, (newTheme) => {
-  theme.global.name.value = newTheme;
+// Watch para el cambio de tema (reacciona a actTheme + cambio de empresa)
+watch(effectiveTheme, (newTheme) => {
+  if (newTheme) theme.global.name.value = newTheme;
 }, { immediate: true });
+
+// Cuando el usuario cambia de empresa, recargar para refetch toda la data
+// con el nuevo header X-Company. Es la forma más segura de evitar mezclas.
+watch(() => companyStore.currentCompany, (newCo, oldCo) => {
+  if (oldCo && newCo && oldCo !== newCo) {
+    window.location.reload();
+  }
+});
 
 // Iniciales del usuario para el avatar
 const initials = computed(() => {

@@ -8,13 +8,16 @@ const axiosServices = axios.create({
     }
 });
 
-// Interceptor para agregar el token automáticamente
+// Interceptor: agrega token JWT y empresa actual en cada request
 axiosServices.interceptors.request.use(
     (config) => {
         const token = localStorage.getItem('token');
         if (token) {
             config.headers.Authorization = token;
         }
+        // Multi-empresa: header X-Company desde localStorage (escrito por useCompanyStore)
+        const company = localStorage.getItem('currentCompany') || 'SBOINOVA';
+        config.headers['X-Company'] = company;
         return config;
     },
     (error) => Promise.reject(error)

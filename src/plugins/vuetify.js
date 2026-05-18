@@ -11,10 +11,11 @@ import {
   DARK_GREEN_THEME,
   DARK_CYAN_THEME
 } from '@/theme/DarkTheme';
+import { COMPANY_THEMES } from '@/theme/CompanyThemes';
 
 export default createVuetify({
   theme: {
-    defaultTheme: 'DARK_BLUE_THEME',
+    defaultTheme: 'INOVATECH_DARK',
     themes: {
       BLUE_THEME,
       DARK_BLUE_THEME,
@@ -22,7 +23,8 @@ export default createVuetify({
       DARK_ORANGE_THEME,
       DARK_PURPLE_THEME,
       DARK_GREEN_THEME,
-      DARK_CYAN_THEME
+      DARK_CYAN_THEME,
+      ...COMPANY_THEMES
     }
   },
   defaults: {
