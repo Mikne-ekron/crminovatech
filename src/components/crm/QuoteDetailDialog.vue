@@ -435,6 +435,7 @@
         :card-code="item?.CardCode"
         :customer-name="item?.Cliente"
         :initial-folio="folio"
+        :source-company="item?.SourceCompany"
         @created="onOpportunityCreated"
       />
     </v-card>
@@ -490,7 +491,11 @@ const goToOpportunity = () => {
 const openPrintView = () => {
     if (!props.folio) return;
     // Abrir en nueva pestaña para no perder el contexto del pipeline
-    const url = router.resolve({ name: 'PrintQuote', params: { folio: props.folio } }).href;
+    const url = router.resolve({
+        name: 'PrintQuote',
+        params: { folio: props.folio },
+        query: props.item?.SourceCompany ? { sourceCompany: props.item.SourceCompany } : {}
+    }).href;
     window.open(url, '_blank', 'noopener');
 };
 
@@ -540,6 +545,7 @@ const updateControl = async () => {
     try {
         await axios.post('/crm/pipeline/control', {
             Folio: props.folio,
+            SourceCompany: props.item?.SourceCompany,
             Tipo: control.value.Tipo,
             Etapa: control.value.Etapa,
             ProximaAccion: control.value.ProximaAccion,
@@ -652,12 +658,14 @@ watch(internalModel, (val) => {
     emit('update:modelValue', val);
 });
 
+const sourceParams = computed(() => props.item?.SourceCompany ? { sourceCompany: props.item.SourceCompany } : {});
+
 const fetchData = async () => {
     loading.value = true;
     try {
         const [resDetail, resLogs] = await Promise.all([
-            axios.get(`/crm/pipeline/detail/${props.folio}`),
-            axios.get(`/crm/pipeline/logs/${props.folio}`)
+            axios.get(`/crm/pipeline/detail/${props.folio}`, { params: sourceParams.value }),
+            axios.get(`/crm/pipeline/logs/${props.folio}`, { params: sourceParams.value })
         ]);
         detail.value = resDetail.data;
         logs.value = resLogs.data;
@@ -674,12 +682,13 @@ const saveLog = async () => {
     try {
         const response = await axios.post('/crm/pipeline/logs', {
             Folio: props.folio,
+            SourceCompany: props.item?.SourceCompany,
             Text: newLogText.value,
             Type: 'comment',
             FollowUpDate: followUpDate.value,
             CardName: detail.value?.header?.Cliente
         });
-        
+
         if (response.data.m365Error) {
             m365Error.value = true;
             if (response.data.m365Error === 'InvalidAuthenticationToken' || response.data.m365Error.includes('401')) {
@@ -699,7 +708,7 @@ const saveLog = async () => {
 
 const fetchLogs = async () => {
     try {
-        const res = await axios.get(`/crm/pipeline/logs/${props.folio}`);
+        const res = await axios.get(`/crm/pipeline/logs/${props.folio}`, { params: sourceParams.value });
         logs.value = res.data;
     } catch (err) {
         console.error(err);

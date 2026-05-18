@@ -7,7 +7,8 @@ import { stageColors } from '@/config/crmStages';
 
 const props = defineProps({
     modelValue: Boolean,
-    docNum: [Number, String]
+    docNum: [Number, String],
+    sourceCompany: { type: String, default: null }
 });
 const emit = defineEmits(['update:modelValue']);
 
@@ -29,7 +30,9 @@ const fetchDetail = async () => {
     loading.value = true;
     data.value = null;
     try {
-        const res = await axios.get(`/crm/backlog/${props.docNum}`);
+        const res = await axios.get(`/crm/backlog/${props.docNum}`, {
+            params: props.sourceCompany ? { sourceCompany: props.sourceCompany } : {}
+        });
         data.value = res.data;
     } catch (e) {
         console.error(e);

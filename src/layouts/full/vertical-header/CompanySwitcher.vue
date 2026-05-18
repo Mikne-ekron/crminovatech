@@ -32,12 +32,10 @@ const choose = (c) => {
                 size="small"
                 class="company-switcher-btn mr-2"
                 color="primary"
+                prepend-icon="mdi-domain"
+                append-icon="mdi-chevron-down"
             >
-                <v-avatar size="20" rounded="sm" class="mr-2">
-                    <v-img :src="logoFor(current)" :alt="current.label" contain></v-img>
-                </v-avatar>
-                <span class="text-body-2 font-weight-bold">{{ current.shortLabel }}</span>
-                <v-icon size="16" class="ml-1">mdi-chevron-down</v-icon>
+                <span class="text-body-2 font-weight-bold">{{ current.label }}</span>
             </v-btn>
         </template>
 

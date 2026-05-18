@@ -30,9 +30,11 @@ const stockStatusOptions = [
 
 const showDetail = ref(false);
 const selectedDocNum = ref(null);
+const selectedSourceCompany = ref(null);
 
 const openDetail = (item) => {
     selectedDocNum.value = item.Folio;
+    selectedSourceCompany.value = item.SourceCompany || null;
     showDetail.value = true;
 };
 
@@ -300,7 +302,7 @@ onMounted(fetchBacklog);
             </v-data-table>
         </v-card>
 
-        <BacklogDetailDialog v-model="showDetail" :doc-num="selectedDocNum" />
+        <BacklogDetailDialog v-model="showDetail" :doc-num="selectedDocNum" :source-company="selectedSourceCompany" />
     </v-container>
 </template>
 

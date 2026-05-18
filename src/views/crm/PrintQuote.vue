@@ -17,7 +17,8 @@ const fetchDetail = async () => {
     loading.value = true;
     error.value = null;
     try {
-        const res = await axios.get(`/crm/pipeline/detail/${folio.value}`);
+        const params = route.query.sourceCompany ? { sourceCompany: route.query.sourceCompany } : {};
+        const res = await axios.get(`/crm/pipeline/detail/${folio.value}`, { params });
         detail.value = res.data;
     } catch (e) {
         error.value = e.response?.data?.msg || 'Error obteniendo cotización';
