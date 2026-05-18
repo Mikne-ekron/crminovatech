@@ -2,19 +2,12 @@
 import { ref, computed, onMounted } from 'vue';
 import { useRouter } from 'vue-router';
 import axios from '@/utils/axios';
+import { stageColors } from '@/config/crmStages';
 
 const router = useRouter();
 const loading = ref(false);
 const opportunities = ref([]);
 const search = ref('');
-
-const stageColors = {
-    '1. Dimensionamiento': 'info',
-    '2. Negociación': 'warning',
-    '3. Aprobado/OC': 'primary',
-    '4. Colocado': 'success',
-    '5. Perdida': 'error'
-};
 
 const headers = [
     { title: 'ID', key: 'OpportunityID', align: 'start', width: '80px' },

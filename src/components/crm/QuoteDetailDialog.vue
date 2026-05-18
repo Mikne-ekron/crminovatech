@@ -13,7 +13,16 @@
           Detalle de Cotización: #{{ folio }}
         </v-toolbar-title>
         <v-spacer></v-spacer>
-        <v-btn variant="tonal" color="primary" prepend-icon="mdi-printer" class="mr-2">Imprimir SAP</v-btn>
+        <v-btn
+            variant="tonal"
+            color="primary"
+            prepend-icon="mdi-printer"
+            class="mr-2"
+            :disabled="!folio"
+            @click="openPrintView"
+        >
+            Imprimir
+        </v-btn>
         <v-btn variant="flat" color="primary" prepend-icon="mdi-check-circle">Aprobar</v-btn>
       </v-toolbar>
 
@@ -282,6 +291,47 @@
                                 @update:model-value="updateControl"
                             ></v-text-field>
                         </v-col>
+
+                        <!-- Campos condicionales cuando Etapa = Perdida -->
+                        <template v-if="showPerdidaFields">
+                            <v-col cols="12" sm="6">
+                                <v-select
+                                    v-model="control.MotivoPerdida"
+                                    :items="motivoPerdidaOptions"
+                                    label="Motivo de pérdida"
+                                    variant="outlined"
+                                    density="compact"
+                                    hide-details
+                                    color="error"
+                                    prepend-inner-icon="mdi-alert-octagon-outline"
+                                    @update:model-value="updateControl"
+                                ></v-select>
+                            </v-col>
+                            <v-col cols="12" sm="6" v-if="showSeguimientoField">
+                                <v-text-field
+                                    v-model="control.FechaSeguimiento"
+                                    type="date"
+                                    label="Próximo seguimiento"
+                                    variant="outlined"
+                                    density="compact"
+                                    hide-details
+                                    prepend-inner-icon="mdi-calendar-clock"
+                                    @update:model-value="updateControl"
+                                ></v-text-field>
+                            </v-col>
+                            <v-col cols="12" v-if="showComentarioField">
+                                <v-textarea
+                                    v-model="control.ComentarioPerdida"
+                                    label="Comentario del vendedor"
+                                    variant="outlined"
+                                    density="compact"
+                                    hide-details
+                                    rows="2"
+                                    auto-grow
+                                    @blur="updateControl"
+                                ></v-textarea>
+                            </v-col>
+                        </template>
                     </v-row>
                 </v-card-text>
             </v-card>
@@ -399,6 +449,10 @@ import LogoDark from '@/assets/images/logos/logo-blue.png';
 import { useCustomizerStore } from '@/stores/customizer';
 import CreateOpportunityDialog from '@/components/crm/CreateOpportunityDialog.vue';
 import { useRouter } from 'vue-router';
+import {
+    stageOptions, motivoPerdidaOptions,
+    isPerdida, requiresSeguimiento, requiresComentario
+} from '@/config/crmStages';
 
 
 const customizer = useCustomizerStore();
@@ -433,13 +487,12 @@ const goToOpportunity = () => {
     }
 };
 
-const stageOptions = [
-    '1. Dimensionamiento',
-    '2. Negociación',
-    '3. Aprobado/OC',
-    '4. Colocado',
-    '5. Perdida'
-];
+const openPrintView = () => {
+    if (!props.folio) return;
+    // Abrir en nueva pestaña para no perder el contexto del pipeline
+    const url = router.resolve({ name: 'PrintQuote', params: { folio: props.folio } }).href;
+    window.open(url, '_blank', 'noopener');
+};
 
 const sentimentOptions = ['Caliente', 'Tibio', 'Frio'];
 const tipoOptions = ['Proyecto', 'Transaccional'];
@@ -449,8 +502,15 @@ const control = ref({
     Etapa: null,
     Sentimiento: null,
     ProximaAccion: '',
-    FechaCierre: null
+    FechaCierre: null,
+    MotivoPerdida: null,
+    ComentarioPerdida: '',
+    FechaSeguimiento: null
 });
+
+const showPerdidaFields = computed(() => isPerdida(control.value.Etapa));
+const showSeguimientoField = computed(() => showPerdidaFields.value && requiresSeguimiento(control.value.MotivoPerdida));
+const showComentarioField = computed(() => showPerdidaFields.value && requiresComentario(control.value.MotivoPerdida));
 
 const toDateInputValue = (d) => {
     if (!d) return null;
@@ -466,7 +526,10 @@ const syncControlFromItem = () => {
         Etapa: props.item.Etapa ?? null,
         Sentimiento: props.item.Sentimiento ?? null,
         ProximaAccion: props.item.ProximaAccion ?? '',
-        FechaCierre: toDateInputValue(props.item.FechaCierre)
+        FechaCierre: toDateInputValue(props.item.FechaCierre),
+        MotivoPerdida: props.item.MotivoPerdida ?? null,
+        ComentarioPerdida: props.item.ComentarioPerdida ?? '',
+        FechaSeguimiento: toDateInputValue(props.item.FechaSeguimiento)
     };
 };
 
@@ -481,7 +544,10 @@ const updateControl = async () => {
             Etapa: control.value.Etapa,
             ProximaAccion: control.value.ProximaAccion,
             Sentimiento: control.value.Sentimiento,
-            FechaCierre: control.value.FechaCierre
+            FechaCierre: control.value.FechaCierre,
+            MotivoPerdida: control.value.MotivoPerdida,
+            ComentarioPerdida: control.value.ComentarioPerdida,
+            FechaSeguimiento: control.value.FechaSeguimiento
         });
         emit('update:item', { ...props.item, ...control.value });
     } catch (error) {

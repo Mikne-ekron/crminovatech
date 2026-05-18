@@ -2,6 +2,10 @@
 import { ref, computed, onMounted, watch } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import axios from '@/utils/axios';
+import {
+    stageOptions, stageColors, motivoPerdidaOptions,
+    isPerdida, requiresSeguimiento, requiresComentario
+} from '@/config/crmStages';
 
 const route = useRoute();
 const router = useRouter();
@@ -10,26 +14,29 @@ const loading = ref(false);
 const saving = ref(false);
 const data = ref(null);
 
-const stageOptions = [
-    '1. Dimensionamiento',
-    '2. Negociación',
-    '3. Aprobado/OC',
-    '4. Colocado',
-    '5. Perdida'
-];
+const editable = ref({
+    Name: '', Etapa: '', FechaCierre: null, Notas: '',
+    MotivoPerdida: null, ComentarioPerdida: '', FechaSeguimiento: null
+});
 
-const editable = ref({ Name: '', Etapa: '', FechaCierre: null, Notas: '' });
+const showPerdidaFields = computed(() => isPerdida(editable.value.Etapa));
+const showSeguimientoField = computed(() => showPerdidaFields.value && requiresSeguimiento(editable.value.MotivoPerdida));
+const showComentarioField = computed(() => showPerdidaFields.value && requiresComentario(editable.value.MotivoPerdida));
 
 const fetchDetail = async () => {
     loading.value = true;
     try {
         const res = await axios.get(`/crm/opportunities/${route.params.id}`);
         data.value = res.data;
+        const h = data.value.header;
         editable.value = {
-            Name: data.value.header.Name,
-            Etapa: data.value.header.Etapa,
-            FechaCierre: data.value.header.FechaCierre ? new Date(data.value.header.FechaCierre).toISOString().slice(0, 10) : null,
-            Notas: data.value.header.Notas || ''
+            Name: h.Name,
+            Etapa: h.Etapa,
+            FechaCierre: h.FechaCierre ? new Date(h.FechaCierre).toISOString().slice(0, 10) : null,
+            Notas: h.Notas || '',
+            MotivoPerdida: h.MotivoPerdida || null,
+            ComentarioPerdida: h.ComentarioPerdida || '',
+            FechaSeguimiento: h.FechaSeguimiento ? new Date(h.FechaSeguimiento).toISOString().slice(0, 10) : null
         };
     } catch (e) {
         console.error(e);
@@ -70,14 +77,6 @@ const removeOpp = async () => {
 
 const formatCurrency = (v, c) => new Intl.NumberFormat('es-MX', { style: 'currency', currency: c || 'MXN' }).format(v || 0);
 const formatDate = (d) => d ? new Date(d).toLocaleDateString('es-MX') : '—';
-
-const stageColors = {
-    '1. Dimensionamiento': 'info',
-    '2. Negociación': 'warning',
-    '3. Aprobado/OC': 'primary',
-    '4. Colocado': 'success',
-    '5. Perdida': 'error'
-};
 
 const quoteHeaders = [
     { title: 'Folio', key: 'Folio' },
@@ -179,6 +178,41 @@ onMounted(fetchDetail);
                         <v-col cols="12">
                             <v-text-field v-model="editable.Notas" label="Notas" variant="outlined" density="compact"></v-text-field>
                         </v-col>
+
+                        <!-- Campos condicionales cuando Etapa = Perdida -->
+                        <template v-if="showPerdidaFields">
+                            <v-col cols="12" md="6">
+                                <v-select
+                                    v-model="editable.MotivoPerdida"
+                                    :items="motivoPerdidaOptions"
+                                    label="Motivo de pérdida"
+                                    variant="outlined"
+                                    density="compact"
+                                    prepend-inner-icon="mdi-alert-octagon-outline"
+                                    color="error"
+                                ></v-select>
+                            </v-col>
+                            <v-col cols="12" md="6" v-if="showSeguimientoField">
+                                <v-text-field
+                                    v-model="editable.FechaSeguimiento"
+                                    type="date"
+                                    label="Próximo seguimiento"
+                                    variant="outlined"
+                                    density="compact"
+                                    prepend-inner-icon="mdi-calendar-clock"
+                                ></v-text-field>
+                            </v-col>
+                            <v-col cols="12" v-if="showComentarioField">
+                                <v-textarea
+                                    v-model="editable.ComentarioPerdida"
+                                    label="Comentario del vendedor"
+                                    variant="outlined"
+                                    density="compact"
+                                    rows="2"
+                                    auto-grow
+                                ></v-textarea>
+                            </v-col>
+                        </template>
                     </v-row>
                 </v-card-text>
             </v-card>

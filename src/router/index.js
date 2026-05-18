@@ -153,6 +153,14 @@ const routes = [
     ]
   },
 
+  // Vista de impresión (fuera del MainLayout para ocupar toda la pantalla)
+  {
+    path: '/print/quote/:folio',
+    name: 'PrintQuote',
+    component: () => import('@/views/crm/PrintQuote.vue'),
+    meta: { requiresAuth: true }
+  },
+
   // 3. COMODÍN (404)
   {
     path: '/:pathMatch(.*)*',

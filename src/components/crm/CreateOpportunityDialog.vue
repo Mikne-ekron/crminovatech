@@ -1,6 +1,7 @@
 <script setup>
 import { ref, watch, computed } from 'vue';
 import axios from '@/utils/axios';
+import { stageOptions } from '@/config/crmStages';
 
 const props = defineProps({
     modelValue: Boolean,
@@ -24,13 +25,6 @@ const fechaCierre = ref(null);
 const notas = ref('');
 const error = ref(null);
 
-const stageOptions = [
-    '1. Dimensionamiento',
-    '2. Negociación',
-    '3. Aprobado/OC',
-    '4. Colocado',
-    '5. Perdida'
-];
 const etapa = ref(stageOptions[0]);
 
 const totalSum = computed(() => {
@@ -192,7 +186,7 @@ const submit = async () => {
 
                 <v-progress-linear v-if="loading" indeterminate color="primary"></v-progress-linear>
 
-                <v-list density="compact" v-if="!loading && availableQuotes.length > 0">
+                <v-list density="compact" v-if="!loading && availableQuotes.length > 0" lines="three">
                     <v-list-item
                         v-for="q in availableQuotes"
                         :key="q.Folio"
@@ -215,9 +209,17 @@ const submit = async () => {
                         <v-list-item-title class="font-weight-bold">
                             #{{ q.Folio }}
                             <v-chip size="x-small" variant="tonal" class="ml-2">{{ q.Etapa }}</v-chip>
+                            <span class="ml-2 text-medium-emphasis text-body-2 font-weight-regular">
+                                {{ formatDate(q.Fecha) }} · {{ formatCurrency(q.Monto) }}
+                            </span>
                         </v-list-item-title>
-                        <v-list-item-subtitle>
-                            {{ formatDate(q.Fecha) }} · {{ formatCurrency(q.Monto) }}
+                        <v-list-item-subtitle v-if="q.Referencia" class="text-body-2 mt-1">
+                            <v-icon size="14" class="mr-1">mdi-tag-outline</v-icon>
+                            <span class="font-weight-medium">Ref:</span> {{ q.Referencia }}
+                        </v-list-item-subtitle>
+                        <v-list-item-subtitle v-if="q.Comentarios" class="text-body-2 mt-1 quote-comments">
+                            <v-icon size="14" class="mr-1">mdi-comment-text-outline</v-icon>
+                            {{ q.Comentarios }}
                         </v-list-item-subtitle>
                     </v-list-item>
                 </v-list>
@@ -240,3 +242,13 @@ const submit = async () => {
         </v-card>
     </v-dialog>
 </template>
+
+<style scoped>
+.quote-comments {
+    white-space: normal !important;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    display: -webkit-box;
+    overflow: hidden;
+}
+</style>

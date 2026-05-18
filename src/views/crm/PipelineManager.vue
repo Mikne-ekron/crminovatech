@@ -390,13 +390,7 @@ const handleOpenQuote = (folio) => {
     showQuoteDialog.value = true;
 };
 
-const stageOptions = [
-    '1. Dimensionamiento',
-    '2. Negociación',
-    '3. Aprobado/OC',
-    '4. Colocado',
-    '5. Perdida'
-];
+import { stageOptions } from '@/config/crmStages';
 
 // Filtros dinámicos basados en la data cargada
 const vendedorOptions = computed(() => {
