@@ -10,6 +10,7 @@ import Logo from '../logo/Logo.vue';
 import LogoIcon from '../logo/LogoIcon.vue';
 import RtlLogo from '../logo/RtlLogo.vue';
 import ThemeToggler from './ThemeToggler.vue';
+import CompanySwitcher from './CompanySwitcher.vue';
 // import Navigations from './Navigations.vue';
 // import Messages from './Messages.vue';
 // import RightMobileSidebar from './RightMobileSidebar.vue';
@@ -97,6 +98,7 @@ const getCart = computed(() => {
         <div class="hidden-md-and-up mt-2">
             <LogoIcon />
         </div>
+        <CompanySwitcher class="hidden-sm-and-down" />
         <div class="me-md-1">
             <ThemeToggler />
         </div>

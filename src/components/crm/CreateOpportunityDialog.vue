@@ -8,7 +8,8 @@ const props = defineProps({
     cardCode: String,
     customerName: String,
     initialFolio: [Number, String],
-    opportunityId: { type: [Number, String], default: null }
+    opportunityId: { type: [Number, String], default: null },
+    sourceCompany: { type: String, default: null }
 });
 const emit = defineEmits(['update:modelValue', 'created']);
 
@@ -82,9 +83,13 @@ const submit = async () => {
     saving.value = true;
     error.value = null;
     try {
+        // Resolver SourceCompany: pasada por prop (más confiable) o la del primer folio seleccionado
+        const firstSelected = availableQuotes.value.find(q => q.Folio === selectedFolios.value[0]);
+        const sourceCompany = props.sourceCompany || firstSelected?.SourceCompany;
         const res = await axios.post('/crm/opportunities', {
             CardCode: props.cardCode,
             CustomerName: props.customerName,
+            SourceCompany: sourceCompany,
             Name: name.value,
             Etapa: etapa.value,
             FechaCierre: fechaCierre.value,

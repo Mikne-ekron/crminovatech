@@ -13,7 +13,8 @@ export const useAuthStore = defineStore('auth', {
     }),
 
     getters: {
-        isAuthenticated: (state) => !!state.token
+        isAuthenticated: (state) => !!state.token,
+        canSwitchCompany: (state) => !!state.user?.canSwitchCompany
     },
 
     actions: {
