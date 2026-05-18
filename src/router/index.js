@@ -149,6 +149,11 @@ const routes = [
         path: 'crm/opportunities/:id',
         name: 'OpportunityDetail',
         component: () => import('@/views/crm/OpportunityDetail.vue')
+      },
+      {
+        path: 'crm/backlog',
+        name: 'BacklogManager',
+        component: () => import('@/views/crm/BacklogManager.vue')
       }
     ]
   },

@@ -82,9 +82,21 @@ const quoteHeaders = [
     { title: 'Folio', key: 'Folio' },
     { title: 'Fecha', key: 'Fecha' },
     { title: 'Etapa', key: 'Etapa' },
+    { title: 'Estado SAP', key: 'EstadoSAP' },
     { title: 'Monto', key: 'Monto', align: 'end' },
     { title: '', key: 'actions', sortable: false, align: 'end' }
 ];
+
+const estadoSapColor = (estado) => {
+    if (estado === 'Cancelada en SAP') return 'error';
+    if (estado === 'Cerrada en SAP') return 'success';
+    return 'info'; // Abierta
+};
+const estadoSapIcon = (estado) => {
+    if (estado === 'Cancelada en SAP') return 'mdi-close-octagon';
+    if (estado === 'Cerrada en SAP') return 'mdi-check-decagram';
+    return 'mdi-clock-outline';
+};
 
 const mergedHeaders = [
     { title: 'Artículo', key: 'Articulo' },
@@ -231,13 +243,25 @@ onMounted(fetchDetail);
                     <template v-slot:item.Etapa="{ item }">
                         <v-chip :color="stageColors[item.Etapa] || 'grey'" size="x-small" variant="tonal">{{ item.Etapa }}</v-chip>
                     </template>
+                    <template v-slot:item.EstadoSAP="{ item }">
+                        <v-chip :color="estadoSapColor(item.EstadoSAP)" size="x-small" variant="tonal" :prepend-icon="estadoSapIcon(item.EstadoSAP)">
+                            {{ item.EstadoSAP }}
+                        </v-chip>
+                    </template>
                     <template v-slot:item.Monto="{ item }">
-                        <span class="font-weight-bold">{{ formatCurrency(item.Monto, item.Moneda) }}</span>
+                        <span class="font-weight-bold" :class="{ 'text-disabled text-decoration-line-through': item.DocStatus !== 'O' }">
+                            {{ formatCurrency(item.Monto, item.Moneda) }}
+                        </span>
                     </template>
                     <template v-slot:item.actions="{ item }">
                         <v-btn icon="mdi-link-off" size="x-small" variant="text" color="error" @click="removeQuote(item.Folio)"></v-btn>
                     </template>
                 </v-data-table>
+                <div class="px-4 pb-3 text-caption text-medium-emphasis" v-if="data.totals.QuoteCount !== data.totals.QuoteCountTotal">
+                    <v-icon size="14" class="mr-1">mdi-information-outline</v-icon>
+                    Los totales y productos consolidados solo consideran las cotizaciones activas en SAP
+                    ({{ data.totals.QuoteCount }} de {{ data.totals.QuoteCountTotal }}).
+                </div>
             </v-card>
 
             <!-- Productos fusionados -->
