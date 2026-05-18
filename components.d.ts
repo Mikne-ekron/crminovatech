@@ -13,6 +13,7 @@ declare module 'vue' {
   export interface GlobalComponents {
     AddProspectDialog: typeof import('./src/components/crm/AddProspectDialog.vue')['default']
     AppFooter: typeof import('./src/components/AppFooter.vue')['default']
+    CreateOpportunityDialog: typeof import('./src/components/crm/CreateOpportunityDialog.vue')['default']
     CustomerQuotesDialog: typeof import('./src/components/crm/CustomerQuotesDialog.vue')['default']
     HelloWorld: typeof import('./src/components/HelloWorld.vue')['default']
     InvoiceDetailDialog: typeof import('./src/components/crm/InvoiceDetailDialog.vue')['default']

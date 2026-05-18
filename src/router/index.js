@@ -139,6 +139,16 @@ const routes = [
         path: 'crm/commercial-management',
         name: 'CommercialManagement',
         component: () => import('@/views/crm/CommercialManagement.vue')
+      },
+      {
+        path: 'crm/opportunities',
+        name: 'OpportunityList',
+        component: () => import('@/views/crm/OpportunityList.vue')
+      },
+      {
+        path: 'crm/opportunities/:id',
+        name: 'OpportunityDetail',
+        component: () => import('@/views/crm/OpportunityDetail.vue')
       }
     ]
   },

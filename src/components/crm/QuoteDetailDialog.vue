@@ -169,6 +169,47 @@
               </v-data-table>
             </v-card>
 
+            <!-- Oportunidad -->
+            <v-card elevation="0" class="mb-4 rounded-lg border overflow-hidden" color="surface">
+                <div class="py-2 px-4 d-flex align-center border-b bg-lightprimary" style="min-height: 40px;">
+                    <v-icon start color="primary" size="18">mdi-target</v-icon>
+                    <span class="font-weight-black text-primary" style="font-size: 0.75rem; letter-spacing: 0.05rem;">OPORTUNIDAD</span>
+                </div>
+                <v-card-text class="pa-4">
+                    <div v-if="item?.OpportunityID" class="d-flex align-center">
+                        <v-chip color="success" variant="tonal" prepend-icon="mdi-link-variant">
+                            Vinculada a #{{ item.OpportunityID }} — {{ item.OpportunityName || 'Oportunidad' }}
+                        </v-chip>
+                        <v-spacer></v-spacer>
+                        <v-btn
+                            size="small"
+                            variant="text"
+                            color="primary"
+                            prepend-icon="mdi-open-in-new"
+                            @click="goToOpportunity"
+                        >
+                            Abrir oportunidad
+                        </v-btn>
+                    </div>
+                    <div v-else class="d-flex align-center">
+                        <span class="text-body-2 text-medium-emphasis">
+                            Esta cotización no pertenece a ninguna oportunidad.
+                        </span>
+                        <v-spacer></v-spacer>
+                        <v-btn
+                            color="primary"
+                            variant="flat"
+                            size="small"
+                            prepend-icon="mdi-plus"
+                            @click="openCreateOpp"
+                            :disabled="!item?.CardCode"
+                        >
+                            Crear / Unificar
+                        </v-btn>
+                    </div>
+                </v-card-text>
+            </v-card>
+
             <!-- Control CRM -->
             <v-card elevation="0" class="mb-4 rounded-lg border overflow-hidden" color="surface">
                 <div class="py-2 px-4 d-flex align-center border-b bg-lightprimary" style="min-height: 40px;">
@@ -226,6 +267,19 @@
                                 density="compact"
                                 hide-details
                                 @blur="updateControl"
+                            ></v-text-field>
+                        </v-col>
+                        <v-col cols="12" sm="6">
+                            <v-text-field
+                                v-model="control.FechaCierre"
+                                type="date"
+                                label="Fecha de Cierre Estimada"
+                                variant="outlined"
+                                density="compact"
+                                hide-details
+                                prepend-inner-icon="mdi-calendar-check"
+                                clearable
+                                @update:model-value="updateControl"
                             ></v-text-field>
                         </v-col>
                     </v-row>
@@ -325,6 +379,14 @@
           </v-col>
         </v-row>
       </v-container>
+
+      <CreateOpportunityDialog
+        v-model="showCreateOpp"
+        :card-code="item?.CardCode"
+        :customer-name="item?.Cliente"
+        :initial-folio="folio"
+        @created="onOpportunityCreated"
+      />
     </v-card>
   </v-dialog>
 </template>
@@ -335,6 +397,8 @@ import axios from '@/utils/axios';
 import LogoLight from '@/assets/images/logos/logolight.svg';
 import LogoDark from '@/assets/images/logos/logo-blue.png';
 import { useCustomizerStore } from '@/stores/customizer';
+import CreateOpportunityDialog from '@/components/crm/CreateOpportunityDialog.vue';
+import { useRouter } from 'vue-router';
 
 
 const customizer = useCustomizerStore();
@@ -347,6 +411,27 @@ const props = defineProps({
     item: { type: Object, default: null }
 });
 const emit = defineEmits(['update:modelValue', 'open-customer-history', 'update:item']);
+
+const router = useRouter();
+const showCreateOpp = ref(false);
+
+const openCreateOpp = () => {
+    showCreateOpp.value = true;
+};
+
+const onOpportunityCreated = (data) => {
+    // Vincular esta cotización al opp creado y avisar al padre
+    emit('update:item', { ...props.item, OpportunityID: data.OpportunityID });
+    router.push(`/app/crm/opportunities/${data.OpportunityID}`);
+    internalModel.value = false;
+};
+
+const goToOpportunity = () => {
+    if (props.item?.OpportunityID) {
+        router.push(`/app/crm/opportunities/${props.item.OpportunityID}`);
+        internalModel.value = false;
+    }
+};
 
 const stageOptions = [
     '1. Dimensionamiento',
@@ -363,8 +448,16 @@ const control = ref({
     Tipo: null,
     Etapa: null,
     Sentimiento: null,
-    ProximaAccion: ''
+    ProximaAccion: '',
+    FechaCierre: null
 });
+
+const toDateInputValue = (d) => {
+    if (!d) return null;
+    const date = new Date(d);
+    if (isNaN(date)) return null;
+    return date.toISOString().slice(0, 10);
+};
 
 const syncControlFromItem = () => {
     if (!props.item) return;
@@ -372,7 +465,8 @@ const syncControlFromItem = () => {
         Tipo: props.item.Tipo ?? null,
         Etapa: props.item.Etapa ?? null,
         Sentimiento: props.item.Sentimiento ?? null,
-        ProximaAccion: props.item.ProximaAccion ?? ''
+        ProximaAccion: props.item.ProximaAccion ?? '',
+        FechaCierre: toDateInputValue(props.item.FechaCierre)
     };
 };
 
@@ -386,7 +480,8 @@ const updateControl = async () => {
             Tipo: control.value.Tipo,
             Etapa: control.value.Etapa,
             ProximaAccion: control.value.ProximaAccion,
-            Sentimiento: control.value.Sentimiento
+            Sentimiento: control.value.Sentimiento,
+            FechaCierre: control.value.FechaCierre
         });
         emit('update:item', { ...props.item, ...control.value });
     } catch (error) {

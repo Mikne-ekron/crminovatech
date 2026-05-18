@@ -7,8 +7,8 @@
           <p class="text-subtitle-1 text-medium-emphasis">Gestión de Oportunidades (SAP B1 OQUT)</p>
         </div>
         <div class="d-flex gap-2">
-            <!-- Selector de Columnas -->
-            <v-menu :close-on-content-click="false" location="bottom end">
+            <!-- Selector y orden de Columnas -->
+            <v-menu :close-on-content-click="false" location="bottom end" max-width="320">
                 <template v-slot:activator="{ props }">
                     <v-btn
                         variant="outlined"
@@ -20,18 +20,55 @@
                         Columnas
                     </v-btn>
                 </template>
-                <v-list class="pa-2" min-width="200">
-                    <div class="text-overline mb-2 px-2">Visibilidad de Columnas</div>
-                    <v-list-item v-for="h in allHeaders.filter(x => !x.mandatory)" :key="h.key" density="compact">
-                        <v-checkbox
-                            v-model="selectedHeaders"
-                            :label="h.title"
-                            :value="h.key"
-                            hide-details
-                            density="compact"
-                        ></v-checkbox>
-                    </v-list-item>
-                </v-list>
+                <v-card min-width="300">
+                    <v-card-text class="pa-2">
+                        <div class="d-flex align-center mb-2 px-2">
+                            <span class="text-overline">Columnas (arrastra para reordenar)</span>
+                            <v-spacer></v-spacer>
+                            <v-tooltip text="Restablecer orden original">
+                                <template v-slot:activator="{ props: tp }">
+                                    <v-btn
+                                        v-bind="tp"
+                                        icon="mdi-restart"
+                                        size="x-small"
+                                        variant="text"
+                                        @click="resetColumnPrefs"
+                                    ></v-btn>
+                                </template>
+                            </v-tooltip>
+                        </div>
+                        <v-list density="compact" class="column-order-list pa-0">
+                            <v-list-item
+                                v-for="(key, idx) in columnOrder"
+                                :key="key"
+                                draggable="true"
+                                class="column-order-item"
+                                :class="{ 'is-dragging': draggingIndex === idx, 'is-mandatory': isMandatory(key) }"
+                                @dragstart="onDragStart(idx, $event)"
+                                @dragover.prevent="onDragOver(idx, $event)"
+                                @drop.prevent="onDrop(idx)"
+                                @dragend="onDragEnd"
+                            >
+                                <template v-slot:prepend>
+                                    <v-icon size="16" class="drag-handle">mdi-drag</v-icon>
+                                </template>
+                                <v-list-item-title class="text-body-2">
+                                    {{ getHeaderTitle(key) }}
+                                </v-list-item-title>
+                                <template v-slot:append>
+                                    <v-checkbox
+                                        :model-value="!hiddenColumns.includes(key)"
+                                        :disabled="isMandatory(key)"
+                                        density="compact"
+                                        hide-details
+                                        color="primary"
+                                        @update:model-value="(v) => toggleColumnVisibility(key, v)"
+                                    ></v-checkbox>
+                                </template>
+                            </v-list-item>
+                        </v-list>
+                    </v-card-text>
+                </v-card>
             </v-menu>
 
             <v-btn color="primary" prepend-icon="mdi-refresh" elevation="0" @click="fetchPipeline" :loading="loading">Actualizar</v-btn>
@@ -420,11 +457,90 @@ const allHeaders = [
     { title: 'Acciones', key: 'actions', align: 'end', sortable: false, mandatory: true },
 ];
 
-const selectedHeaders = ref(allHeaders.map(h => h.key));
+const defaultOrder = allHeaders.map(h => h.key);
+const columnOrder = ref([...defaultOrder]);
+const hiddenColumns = ref([]);
+const draggingIndex = ref(null);
+
+const headerByKey = computed(() => Object.fromEntries(allHeaders.map(h => [h.key, h])));
+
+const isMandatory = (key) => !!headerByKey.value[key]?.mandatory;
+const getHeaderTitle = (key) => headerByKey.value[key]?.title || key;
 
 const headers = computed(() => {
-    return allHeaders.filter(h => h.mandatory || selectedHeaders.value.includes(h.key));
+    return columnOrder.value
+        .filter(k => !hiddenColumns.value.includes(k) || isMandatory(k))
+        .map(k => headerByKey.value[k])
+        .filter(Boolean);
 });
+
+// Persistencia preferencia de columnas
+let savePrefsTimer = null;
+const savePrefs = () => {
+    clearTimeout(savePrefsTimer);
+    savePrefsTimer = setTimeout(async () => {
+        try {
+            await axios.put('/preferences/pipeline_columns', {
+                value: { order: columnOrder.value, hidden: hiddenColumns.value }
+            });
+        } catch (e) { console.error('Error guardando preferencia de columnas', e); }
+    }, 400);
+};
+
+const loadPrefs = async () => {
+    try {
+        const res = await axios.get('/preferences/pipeline_columns');
+        const v = res.data?.value;
+        if (v && Array.isArray(v.order)) {
+            // Filtrar columnas obsoletas y agregar nuevas al final
+            const validKeys = new Set(defaultOrder);
+            const ordered = v.order.filter(k => validKeys.has(k));
+            const missing = defaultOrder.filter(k => !ordered.includes(k));
+            columnOrder.value = [...ordered, ...missing];
+            hiddenColumns.value = Array.isArray(v.hidden)
+                ? v.hidden.filter(k => validKeys.has(k) && !isMandatory(k))
+                : [];
+        }
+    } catch (e) { /* sin preferencia guardada, usa default */ }
+};
+
+const resetColumnPrefs = async () => {
+    columnOrder.value = [...defaultOrder];
+    hiddenColumns.value = [];
+    try {
+        await axios.delete('/preferences/pipeline_columns');
+    } catch (e) { console.error(e); }
+};
+
+const toggleColumnVisibility = (key, visible) => {
+    if (isMandatory(key)) return;
+    if (visible) {
+        hiddenColumns.value = hiddenColumns.value.filter(k => k !== key);
+    } else if (!hiddenColumns.value.includes(key)) {
+        hiddenColumns.value = [...hiddenColumns.value, key];
+    }
+    savePrefs();
+};
+
+const onDragStart = (idx, e) => {
+    draggingIndex.value = idx;
+    e.dataTransfer.effectAllowed = 'move';
+};
+
+const onDragOver = (idx, e) => {
+    e.dataTransfer.dropEffect = 'move';
+};
+
+const onDrop = (targetIdx) => {
+    if (draggingIndex.value === null || draggingIndex.value === targetIdx) return;
+    const arr = [...columnOrder.value];
+    const [moved] = arr.splice(draggingIndex.value, 1);
+    arr.splice(targetIdx, 0, moved);
+    columnOrder.value = arr;
+    savePrefs();
+};
+
+const onDragEnd = () => { draggingIndex.value = null; };
 
 const fetchPipeline = async () => {
     loading.value = true;
@@ -498,7 +614,8 @@ const getSentimentIcon = (sentiment) => {
     }
 };
 
-onMounted(() => {
+onMounted(async () => {
+    await loadPrefs();
     fetchPipeline();
 });
 </script>
@@ -546,6 +663,18 @@ onMounted(() => {
 .bg-light-grey {
     background-color: #f8f9fa;
 }
+
+/* Drag & drop de columnas */
+.column-order-list .column-order-item {
+    cursor: grab;
+    border-bottom: 1px solid rgba(var(--v-border-color), 0.08);
+    transition: background-color 0.15s ease, opacity 0.15s ease;
+}
+.column-order-list .column-order-item:last-child { border-bottom: none; }
+.column-order-list .column-order-item.is-dragging { opacity: 0.4; }
+.column-order-list .column-order-item:hover { background-color: rgba(var(--v-theme-primary), 0.05); }
+.column-order-list .column-order-item.is-mandatory { opacity: 0.85; }
+.column-order-list .drag-handle { cursor: grab; opacity: 0.5; }
 
 /* Filtro Vendedor: chip unico + "+N", evita que el campo crezca con multiples selecciones */
 .vendedor-filter :deep(.v-field__input) {
