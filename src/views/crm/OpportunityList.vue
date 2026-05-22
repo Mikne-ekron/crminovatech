@@ -15,7 +15,8 @@ const headers = [
     { title: 'Cliente', key: 'CustomerName', align: 'start' },
     { title: 'Etapa', key: 'Etapa', align: 'start' },
     { title: 'Cotizaciones', key: 'QuoteCount', align: 'center' },
-    { title: 'Monto Total', key: 'TotalMonto', align: 'end' },
+    { title: 'Suma cotizaciones', key: 'SumaMonto', align: 'end' },
+    { title: 'Valor Oportunidad', key: 'TotalMonto', align: 'end' },
     { title: 'Fecha Cierre', key: 'FechaCierre', align: 'start' },
     { title: 'Actualizado', key: 'UpdatedAt', align: 'start' }
 ];
@@ -114,8 +115,11 @@ onMounted(fetchOpportunities);
                 <template v-slot:item.QuoteCount="{ item }">
                     <v-chip size="x-small" variant="tonal">{{ item.QuoteCount }}</v-chip>
                 </template>
+                <template v-slot:item.SumaMonto="{ item }">
+                    <span class="text-medium-emphasis">{{ formatCurrency(item.SumaMonto) }}</span>
+                </template>
                 <template v-slot:item.TotalMonto="{ item }">
-                    <span class="font-weight-bold">{{ formatCurrency(item.TotalMonto) }}</span>
+                    <span class="font-weight-bold text-primary">{{ formatCurrency(item.TotalMonto) }}</span>
                 </template>
                 <template v-slot:item.FechaCierre="{ item }">
                     {{ formatDate(item.FechaCierre) }}

@@ -5,12 +5,18 @@
 
 import { defineStore } from 'pinia';
 
-import inovatechLogoLight from '@/assets/images/logos/companies/inovatech-light.svg';
-import inovatechLogoDark from '@/assets/images/logos/companies/inovatech-dark.svg';
-import mikneLogoDark from '@/assets/images/logos/companies/mikne-dark.png';
-import logLogoLight from '@/assets/images/logos/companies/log-light.svg';
-import logLogoDark from '@/assets/images/logos/companies/log-dark.svg';
+import inovatechLogoWhite from '@/assets/images/logos/companies/inovatech-light.svg'; // logolight: BLANCO
+import inovatechLogoBlue from '@/assets/images/logos/logo-blue.png';                 // AZUL (para papel)
+import mikneLogoBlack from '@/assets/images/logos/companies/mikne-light.png';        // mikne "light": NEGRO
+import mikneLogoWhite from '@/assets/images/logos/companies/mikne-dark.png';         // mikne "dark": BLANCO
+import logLogoDarkText from '@/assets/images/logos/companies/log-light.svg';         // texto verde oscuro
+import logLogoWhiteText from '@/assets/images/logos/companies/log-dark.svg';         // texto blanco
 
+// El header (Logo.vue) siempre va sobre el app-bar de color primary → necesita
+// el logo CLARO/blanco en ambos modos. El papel/impresión y el quote-paper en
+// modo claro van sobre fondo blanco → necesitan el logo OSCURO (printLogo).
+//   logoLight / logoDark : versión clara (header de color)
+//   printLogo            : versión oscura (fondo blanco)
 export const COMPANIES = [
     {
         id: 'SBOINOVA',
@@ -18,8 +24,9 @@ export const COMPANIES = [
         shortLabel: 'Inovatech',
         themeLight: 'INOVATECH_LIGHT',
         themeDark: 'INOVATECH_DARK',
-        logoLight: inovatechLogoLight,
-        logoDark: inovatechLogoDark,
+        logoLight: inovatechLogoWhite,
+        logoDark: inovatechLogoWhite,
+        printLogo: inovatechLogoBlue,
         color: '#1B84FF'
     },
     {
@@ -28,9 +35,9 @@ export const COMPANIES = [
         shortLabel: 'Mikne',
         themeLight: 'MIKNE_LIGHT',
         themeDark: 'MIKNE_DARK',
-        // Mikne usa el mismo logo blanco en ambos modos por preferencia de marca.
-        logoLight: mikneLogoDark,
-        logoDark: mikneLogoDark,
+        logoLight: mikneLogoWhite,
+        logoDark: mikneLogoWhite,
+        printLogo: mikneLogoBlack,
         color: '#0066CC'
     },
     {
@@ -39,8 +46,9 @@ export const COMPANIES = [
         shortLabel: 'Log',
         themeLight: 'LOG_LIGHT',
         themeDark: 'LOG_DARK',
-        logoLight: logLogoLight,
-        logoDark: logLogoDark,
+        logoLight: logLogoWhiteText,
+        logoDark: logLogoWhiteText,
+        printLogo: logLogoDarkText,
         color: '#1B4332'
     }
 ];

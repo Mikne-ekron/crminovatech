@@ -2,27 +2,20 @@
    DYNAMIC THEME OVERRIDES
    ========================================= */
 
+/* Las variables derivan de los tokens del tema Vuetify ACTIVO, así
+   respetan cualquier tema (claro/oscuro de cualquier empresa) sin necesidad
+   de override por nombre. El .v-application aplica el tema activo a sus hijos. */
+.v-application {
+    --canvas-bg: rgb(var(--v-theme-background));
+    --card-bg: rgb(var(--v-theme-surface));
+    --border-color: rgba(var(--v-border-color), var(--v-border-opacity, 1));
+    --text-primary: rgb(var(--v-theme-on-surface));
+    --text-muted: rgb(var(--v-theme-textSecondary));
+    --hover-bg: rgb(var(--v-theme-hoverColor));
+}
+
+/* Fallback por si algún contenedor no está dentro de .v-application */
 :root {
-    /* Default (Dark Blue) */
-    --canvas-bg: #111936;
-    --card-bg: #1A223F;
-    --border-color: #2e3852;
-    --text-primary: #ffffff;
-    --text-muted: #b2b9c5;
-    --hover-bg: #202a4d;
-}
-
-/* Override variables based on Vuetify theme class */
-.v-theme--BLUE_THEME {
-    --canvas-bg: #eef5f9;
-    --card-bg: #ffffff;
-    --border-color: #ebf1f6;
-    --text-primary: #3A4752;
-    --text-muted: #768B9E;
-    --hover-bg: #f6f9fc;
-}
-
-.v-theme--DARK_BLUE_THEME {
     --canvas-bg: #111936;
     --card-bg: #1A223F;
     --border-color: #2e3852;

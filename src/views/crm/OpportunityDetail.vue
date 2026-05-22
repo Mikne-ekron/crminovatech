@@ -98,15 +98,6 @@ const estadoSapIcon = (estado) => {
     return 'mdi-clock-outline';
 };
 
-const mergedHeaders = [
-    { title: 'Artículo', key: 'Articulo' },
-    { title: 'Descripción', key: 'Descripcion' },
-    { title: 'Cantidad', key: 'Cantidad', align: 'end' },
-    { title: 'Precio (más reciente)', key: 'PrecioUnitario', align: 'end' },
-    { title: 'Total Línea', key: 'VentaNetaLinea', align: 'end' },
-    { title: 'Cotizaciones', key: 'Folios' }
-];
-
 onMounted(fetchDetail);
 </script>
 
@@ -142,30 +133,33 @@ onMounted(fetchDetail);
                 </v-col>
             </v-row>
 
-            <!-- KPIs fusionados -->
+            <!-- KPIs de la oportunidad: valor = promedio de las cotizaciones -->
             <v-row class="mb-6">
                 <v-col cols="12" sm="6" md="3">
                     <v-card elevation="2" class="pa-4 text-center">
                         <div class="text-overline text-medium-emphasis">Cotizaciones</div>
                         <div class="text-h4 font-weight-bold text-info">{{ data.totals.QuoteCount }}</div>
+                        <div class="text-caption text-disabled">Suma: {{ formatCurrency(data.totals.SumaMonto) }}</div>
                     </v-card>
                 </v-col>
                 <v-col cols="12" sm="6" md="3">
                     <v-card elevation="2" class="pa-4 text-center" variant="tonal" color="primary">
-                        <div class="text-overline text-medium-emphasis">Monto Fusionado</div>
-                        <div class="text-h4 font-weight-bold text-primary">{{ formatCurrency(data.totals.Monto) }}</div>
+                        <div class="text-overline text-medium-emphasis">Valor de la Oportunidad</div>
+                        <div class="text-h4 font-weight-bold text-primary">{{ formatCurrency(data.totals.ValorOportunidad) }}</div>
+                        <div class="text-caption text-disabled">Promedio (suma / {{ data.totals.QuoteCount }})</div>
                     </v-card>
                 </v-col>
                 <v-col cols="12" sm="6" md="3">
                     <v-card elevation="2" class="pa-4 text-center" variant="tonal" color="success">
                         <div class="text-overline text-medium-emphasis">Utilidad</div>
-                        <div class="text-h4 font-weight-bold text-success">{{ formatCurrency(data.totals.Ganancia) }}</div>
+                        <div class="text-h4 font-weight-bold text-success">{{ formatCurrency(data.totals.UtilidadOportunidad) }}</div>
+                        <div class="text-caption text-disabled">Promedio</div>
                     </v-card>
                 </v-col>
                 <v-col cols="12" sm="6" md="3">
                     <v-card elevation="2" class="pa-4 text-center">
-                        <div class="text-overline text-medium-emphasis">Margen Global</div>
-                        <div class="text-h4 font-weight-bold">{{ Math.ceil(data.totals.MargenGlobal) }}%</div>
+                        <div class="text-overline text-medium-emphasis">Margen</div>
+                        <div class="text-h4 font-weight-bold">{{ Math.ceil(data.totals.MargenOportunidad) }}%</div>
                     </v-card>
                 </v-col>
             </v-row>
@@ -262,41 +256,6 @@ onMounted(fetchDetail);
                     Los totales y productos consolidados solo consideran las cotizaciones activas en SAP
                     ({{ data.totals.QuoteCount }} de {{ data.totals.QuoteCountTotal }}).
                 </div>
-            </v-card>
-
-            <!-- Productos fusionados -->
-            <v-card elevation="0" class="border">
-                <v-toolbar density="compact" color="surface">
-                    <v-icon class="ml-2" color="primary">mdi-package-variant-closed</v-icon>
-                    <v-toolbar-title class="font-weight-bold">
-                        Productos Consolidados
-                        <span class="text-caption text-medium-emphasis ml-2 font-weight-regular">
-                            ({{ data.mergedLines.length }} artículos · cantidades sumadas, precio más reciente)
-                        </span>
-                    </v-toolbar-title>
-                </v-toolbar>
-                <v-data-table :headers="mergedHeaders" :items="data.mergedLines" hide-default-footer density="compact" items-per-page="-1">
-                    <template v-slot:item.Cantidad="{ item }">
-                        <span class="font-weight-bold">{{ item.Cantidad }}</span>
-                    </template>
-                    <template v-slot:item.PrecioUnitario="{ item }">
-                        {{ formatCurrency(item.PrecioUnitario, item.PrecioMoneda) }}
-                    </template>
-                    <template v-slot:item.VentaNetaLinea="{ item }">
-                        <span class="font-weight-bold">{{ formatCurrency(item.VentaNetaLinea, item.PrecioMoneda) }}</span>
-                    </template>
-                    <template v-slot:item.Folios="{ item }">
-                        <v-chip
-                            v-for="f in item.Folios"
-                            :key="f"
-                            size="x-small"
-                            variant="tonal"
-                            class="mr-1"
-                        >
-                            #{{ f }}
-                        </v-chip>
-                    </template>
-                </v-data-table>
             </v-card>
         </template>
     </v-container>
