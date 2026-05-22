@@ -75,23 +75,20 @@
       </v-card-text>
     </v-card>
 
-    <!-- KPI Cards -->
+    <!-- KPI Cards: embudo comercial Pipeline -> Backlog -> Revenue + Utilidad + Hit Rate -->
     <v-row>
-      <v-col cols="12" sm="6" md="3" v-for="(kpi, index) in kpis" :key="index">
-        <v-card elevation="0" class="h-100 kpi-card border" :loading="loading">
+      <v-col cols="12" sm="6" md="4" lg="" v-for="(kpi, index) in kpis" :key="index" class="flex-grow-1">
+        <v-card elevation="0" class="h-100 kpi-card border" :loading="loading" :style="{ borderTop: `3px solid ${kpi.accent}` }">
           <v-card-text>
             <div class="d-flex align-center justify-space-between mb-2">
               <span class="text-overline font-weight-bold text-medium-emphasis">{{ kpi.title }}</span>
-              <v-icon :color="kpi.color" size="24">{{ kpi.icon }}</v-icon>
+              <v-icon :color="kpi.color" size="22">{{ kpi.icon }}</v-icon>
             </div>
-            <div class="d-flex align-end">
-              <h3 class="text-h4 font-weight-bold mr-2">{{ kpi.value }}</h3>
-              <span :class="[`text-${kpi.trendColor}`, 'text-caption', 'mb-1', 'font-weight-bold', 'd-flex', 'align-center']">
-                <v-icon size="14" :color="kpi.trendColor" class="mr-1">{{ kpi.trendIcon }}</v-icon>
-                {{ kpi.trend }}
-              </span>
+            <h3 class="text-h5 font-weight-bold">{{ kpi.value }}</h3>
+            <div v-if="kpi.secondary" class="text-subtitle-2 font-weight-bold" :class="`text-${kpi.color}`">
+              {{ kpi.secondary }}
             </div>
-            <div class="mt-2 text-caption text-medium-emphasis">{{ kpi.subtitle }}</div>
+            <div class="mt-1 text-caption text-medium-emphasis">{{ kpi.subtitle }}</div>
           </v-card-text>
         </v-card>
       </v-col>
@@ -174,48 +171,49 @@ const monthOptions = [
 
 const kpis = ref([
   {
-    title: 'Utilidad Bruta',
-    key: 'utilidadBruta',
+    title: 'Pipeline',
     value: '$0',
-    subtitle: 'Venta facturada',
-    icon: 'mdi-cash-multiple',
-    color: 'success',
-    trend: 'En vivo',
-    trendColor: 'success',
-    trendIcon: 'mdi-pulse'
+    secondary: '',
+    subtitle: 'Oportunidades activas (no cerradas)',
+    icon: 'mdi-filter-variant',
+    color: 'info',
+    accent: '#2CABE3'
   },
   {
-    title: 'Pipe Activo',
-    key: 'pipeActivo',
+    title: 'Backlog',
     value: '$0',
-    subtitle: 'Cotizaciones abiertas',
-    icon: 'mdi-filter-outline',
+    secondary: '',
+    subtitle: 'Órdenes colocadas por facturar',
+    icon: 'mdi-truck-fast-outline',
+    color: 'purple',
+    accent: '#725AF2'
+  },
+  {
+    title: 'Revenue',
+    value: '$0',
+    secondary: '',
+    subtitle: 'Venta real facturada (sin IVA, neta de NC)',
+    icon: 'mdi-cash-check',
+    color: 'success',
+    accent: '#2CD07E'
+  },
+  {
+    title: 'Utilidad',
+    value: '$0',
+    secondary: '0%',
+    subtitle: 'Margen sobre venta real',
+    icon: 'mdi-chart-areaspline',
     color: 'primary',
-    trend: 'Pipeline',
-    trendColor: 'info',
-    trendIcon: 'mdi-chart-line'
+    accent: '#1B84FF'
   },
   {
     title: 'Hit Rate',
-    key: 'hitRate',
     value: '0%',
-    subtitle: 'Conversión de pedidos',
+    secondary: '',
+    subtitle: 'Cotizado convertido a OV (por monto)',
     icon: 'mdi-target',
     color: 'warning',
-    trend: 'Eficiencia',
-    trendColor: 'warning',
-    trendIcon: 'mdi-trending-up'
-  },
-  {
-    title: 'Cross-Selling',
-    key: 'crossSelling',
-    value: '0.0',
-    subtitle: 'Categorías por cliente',
-    icon: 'mdi-briefcase-search-outline',
-    color: 'info',
-    trend: 'Diversificación',
-    trendColor: 'secondary',
-    trendIcon: 'mdi-account-group'
+    accent: '#F6C000'
   }
 ]);
 
@@ -241,32 +239,46 @@ const chartData = computed(() => ({
   labels: ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic'],
   datasets: [
     {
-      label: 'Utilidad Bruta',
-      data: monthlyData.value.map(d => d.utilidad),
-      borderColor: '#1e88e5',
-      backgroundColor: '#1e88e5',
+      label: 'Revenue',
+      data: monthlyData.value.map(d => d.revenue),
+      borderColor: '#2CD07E',
+      backgroundColor: '#2CD07E',
       yAxisID: 'y',
+      tension: 0.3,
     },
     {
-      label: 'Pipe Activo',
-      data: monthlyData.value.map(d => d.pipe),
-      borderColor: '#5e35b1',
-      backgroundColor: '#5e35b1',
+      label: 'Utilidad',
+      data: monthlyData.value.map(d => d.utilidad),
+      borderColor: '#1B84FF',
+      backgroundColor: '#1B84FF',
       yAxisID: 'y',
+      tension: 0.3,
+    },
+    {
+      label: 'Pipeline',
+      data: monthlyData.value.map(d => d.pipeline),
+      borderColor: '#2CABE3',
+      backgroundColor: '#2CABE3',
+      borderDash: [5, 4],
+      yAxisID: 'y',
+      tension: 0.3,
+    },
+    {
+      label: 'Backlog',
+      data: monthlyData.value.map(d => d.backlog),
+      borderColor: '#725AF2',
+      backgroundColor: '#725AF2',
+      borderDash: [5, 4],
+      yAxisID: 'y',
+      tension: 0.3,
     },
     {
       label: 'Hit Rate %',
       data: monthlyData.value.map(d => d.hitRate),
-      borderColor: '#43a047',
-      backgroundColor: '#43a047',
+      borderColor: '#F6C000',
+      backgroundColor: '#F6C000',
       yAxisID: 'y1',
-    },
-    {
-      label: 'Cross-Selling',
-      data: monthlyData.value.map(d => d.crossSelling),
-      borderColor: '#fb8c00',
-      backgroundColor: '#fb8c00',
-      yAxisID: 'y1',
+      tension: 0.3,
     }
   ]
 }));
@@ -295,7 +307,8 @@ const chartOptions = {
       grid: { drawOnChartArea: false },
       title: { display: true, text: 'Hit Rate %' },
       min: 0,
-      max: 100
+      max: 100,
+      ticks: { callback: (value) => value + '%' }
     }
   },
   plugins: {
@@ -333,20 +346,21 @@ const fetchKPIs = async () => {
         ]);
 
         const data = kpiRes.data;
-        kpis.value[0].value = formatCurrency(data.utilidadBruta);
-        kpis.value[1].value = formatCurrency(data.pipeActivo);
-        kpis.value[2].value = formatPercent(data.hitRate);
-        kpis.value[3].value = data.crossSelling.toFixed(2);
-        
+        // 0 Pipeline, 1 Backlog, 2 Revenue, 3 Utilidad, 4 Hit Rate
+        kpis.value[0].value = formatCurrency(data.pipeline);
+        kpis.value[1].value = formatCurrency(data.backlog);
+        kpis.value[2].value = formatCurrency(data.revenue);
+        kpis.value[3].value = formatCurrency(data.utilidadMonto);
+        kpis.value[3].secondary = `${data.utilidadPorc.toFixed(1)}% margen`;
+        kpis.value[4].value = formatPercent(data.hitRate);
+        kpis.value[4].secondary = `${formatCurrency(data.montoConvertido)} de ${formatCurrency(data.montoCotizado)}`;
+
         monthlyData.value = statsRes.data;
 
-        // Actualizar subtítulos
-        const periodoStr = filters.value.month 
+        const periodoStr = filters.value.month
             ? `${monthOptions.find(m => m.value === filters.value.month).text} ${filters.value.year}`
             : `Todo ${filters.value.year}`;
-        
-        kpis.value[0].subtitle = `Facturado ${periodoStr}`;
-        kpis.value[1].subtitle = `Abierto ${periodoStr}`;
+        kpis.value[2].subtitle = `Venta real · ${periodoStr}`;
 
     } catch (error) {
         console.error("Error al cargar datos del dashboard:", error);
@@ -358,7 +372,8 @@ const fetchKPIs = async () => {
 const fetchSalespeople = async () => {
     try {
         const response = await axios.get('/crm/salespeople');
-        vendedorOptions.value = response.data;
+        // El endpoint devuelve [{id, name}] (consolidado multi-empresa); usamos nombres
+        vendedorOptions.value = response.data.map(v => v.name || v);
     } catch (error) {
         console.error("Error al cargar vendedores:", error);
     }
