@@ -282,6 +282,25 @@
                 </span>
             </template>
 
+            <template v-slot:item.OpportunityName="{ item }">
+                <v-chip
+                    v-if="item.OpportunityID"
+                    :color="oppColor(item.OpportunityID)"
+                    size="x-small"
+                    variant="flat"
+                    class="font-weight-bold cursor-pointer"
+                    prepend-icon="mdi-link-variant"
+                    @click.stop="goToOpportunity(item.OpportunityID)"
+                >
+                    {{ item.OpportunityName || ('#' + item.OpportunityID) }}
+                    <v-tooltip activator="parent" location="top">
+                        Oportunidad #{{ item.OpportunityID }} · {{ item.OpportunityCount }} cotizaciones
+                        · valor {{ formatCurrency(item.OpportunityValue, 'MXN') }}
+                    </v-tooltip>
+                </v-chip>
+                <span v-else class="text-caption text-disabled">—</span>
+            </template>
+
              <template v-slot:item.Etapa="{ item }">
                 <span :class="getStageColor(item.Etapa)" class="text-caption font-weight-bold">
                     {{ item.Etapa }}
@@ -338,11 +357,19 @@
 
 <script setup>
 import { ref, computed, onMounted } from 'vue';
+import { useRouter } from 'vue-router';
 import axios from '@/utils/axios';
 import QuoteDetailDialog from '@/components/crm/QuoteDetailDialog.vue';
 import CustomerQuotesDialog from '@/components/crm/CustomerQuotesDialog.vue';
 
+const router = useRouter();
 const loading = ref(false);
+
+// Color estable por oportunidad para identificar de un vistazo qué cotizaciones
+// están agrupadas entre sí (mismo color = misma oportunidad).
+const OPP_PALETTE = ['indigo', 'teal', 'deep-purple', 'cyan', 'pink', 'orange', 'green', 'blue-grey'];
+const oppColor = (id) => OPP_PALETTE[Math.abs(Number(id)) % OPP_PALETTE.length];
+const goToOpportunity = (id) => router.push(`/app/crm/opportunities/${id}`);
 
 const pipeline = ref([]);
 const filters = ref({
@@ -420,7 +447,25 @@ const filteredPipeline = computed(() => {
 });
 
 // KPIs Calculados (Reactivos a los filtros)
-const totalSum = computed(() => filteredPipeline.value.reduce((acc, item) => acc + item.Monto, 0));
+// Monto Total: las cotizaciones agrupadas en una oportunidad NO se suman
+// individualmente; cuentan UNA vez por su valor de oportunidad (promedio,
+// que el backend ya calcula con todas las cotizaciones activas del grupo).
+const totalSum = computed(() => {
+    const seenOpps = new Set();
+    let total = 0;
+    for (const item of filteredPipeline.value) {
+        if (item.OpportunityID) {
+            if (!seenOpps.has(item.OpportunityID)) {
+                seenOpps.add(item.OpportunityID);
+                total += (item.OpportunityValue != null ? item.OpportunityValue : item.Monto);
+            }
+            // cotizaciones siguientes del mismo grupo no suman
+        } else {
+            total += item.Monto;
+        }
+    }
+    return total;
+});
 
 const totalClients = computed(() => {
     const clients = filteredPipeline.value.map(item => item.Cliente.split(' - ')[0]);
@@ -443,6 +488,7 @@ const allHeaders = [
     { title: 'Sentimiento', key: 'Sentimiento', align: 'start' },
     { title: 'Cliente', key: 'Cliente', align: 'start', mandatory: true },
     { title: 'Monto', key: 'Monto', align: 'end' },
+    { title: 'Oportunidad', key: 'OpportunityName', align: 'start' },
     { title: 'Etapa', key: 'Etapa', align: 'start' },
     { title: 'Última Acción', key: 'UltimaAccion', align: 'start' },
     { title: 'Vendedor', key: 'Vendedor', align: 'start' },
