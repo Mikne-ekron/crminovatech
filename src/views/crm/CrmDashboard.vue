@@ -210,7 +210,7 @@ const kpis = ref([
     title: 'Hit Rate',
     value: '0%',
     secondary: '',
-    subtitle: 'Cotizado convertido a OV (por monto)',
+    subtitle: 'Convertido a OV / total cotizado del periodo',
     icon: 'mdi-target',
     color: 'warning',
     accent: '#F6C000'
@@ -353,7 +353,7 @@ const fetchKPIs = async () => {
         kpis.value[3].value = formatCurrency(data.utilidadMonto);
         kpis.value[3].secondary = `${data.utilidadPorc.toFixed(1)}% margen`;
         kpis.value[4].value = formatPercent(data.hitRate);
-        kpis.value[4].secondary = `${formatCurrency(data.montoConvertido)} de ${formatCurrency(data.montoCotizado)}`;
+        kpis.value[4].secondary = `${formatCurrency(data.montoConvertido)} de ${formatCurrency(data.montoCotizado)} cotizado`;
 
         monthlyData.value = statsRes.data;
 
