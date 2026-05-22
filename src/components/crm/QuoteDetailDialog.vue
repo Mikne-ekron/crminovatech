@@ -445,9 +445,8 @@
 <script setup>
 import { ref, watch, onMounted, computed } from 'vue';
 import axios from '@/utils/axios';
-import LogoLight from '@/assets/images/logos/logolight.svg';
-import LogoDark from '@/assets/images/logos/logo-blue.png';
 import { useCustomizerStore } from '@/stores/customizer';
+import { useCompanyStore } from '@/stores/company';
 import CreateOpportunityDialog from '@/components/crm/CreateOpportunityDialog.vue';
 import { useRouter } from 'vue-router';
 import {
@@ -457,8 +456,15 @@ import {
 
 
 const customizer = useCustomizerStore();
+const companyStore = useCompanyStore();
 const isDark = computed(() => customizer.actTheme.includes('DARK'));
-const activeLogo = computed(() => isDark.value ? LogoLight : LogoDark);
+// El quote-paper (color surface) cambia con el modo: en oscuro usa el logo
+// claro de la empresa; en claro usa el printLogo (visible sobre blanco).
+const activeLogo = computed(() => {
+    const c = companyStore.company;
+    if (!c) return null;
+    return isDark.value ? c.logoDark : c.printLogo;
+});
 
 const props = defineProps({
     modelValue: Boolean,

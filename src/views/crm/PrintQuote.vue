@@ -2,11 +2,14 @@
 import { ref, computed, onMounted, watch } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import axios from '@/utils/axios';
-import LogoLight from '@/assets/images/logos/logolight.svg';
-import LogoDark from '@/assets/images/logos/logo-blue.png';
+import { useCompanyStore } from '@/stores/company';
 
 const route = useRoute();
 const router = useRouter();
+const companyStore = useCompanyStore();
+
+// Logo de la empresa actual para fondo blanco (papel)
+const printLogo = computed(() => companyStore.company?.printLogo);
 
 const loading = ref(false);
 const detail = ref(null);
@@ -68,7 +71,7 @@ const formatDate = (date) => date ? new Date(date).toLocaleDateString('es-MX') :
         <div v-else-if="detail" class="quote-paper mx-auto">
             <!-- Encabezado -->
             <div class="d-flex justify-space-between align-start mb-6">
-                <img :src="LogoDark" alt="Inovatech" height="70" />
+                <img :src="printLogo" :alt="companyStore.company?.label" height="70" />
                 <div class="text-right">
                     <div class="text-h5 font-weight-bold">COTIZACIÓN</div>
                     <div class="text-subtitle-1 font-weight-bold text-primary">#{{ detail.header.Folio }}</div>

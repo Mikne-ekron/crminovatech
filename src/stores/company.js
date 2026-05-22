@@ -7,10 +7,13 @@ import { defineStore } from 'pinia';
 
 import inovatechLogoLight from '@/assets/images/logos/companies/inovatech-light.svg';
 import inovatechLogoDark from '@/assets/images/logos/companies/inovatech-dark.svg';
+import mikneLogoLight from '@/assets/images/logos/companies/mikne-light.png';
 import mikneLogoDark from '@/assets/images/logos/companies/mikne-dark.png';
 import logLogoLight from '@/assets/images/logos/companies/log-light.svg';
 import logLogoDark from '@/assets/images/logos/companies/log-dark.svg';
 
+// printLogo = logo apropiado para fondo BLANCO (documentos impresos / quote-paper).
+// Difiere de logoLight cuando la empresa fuerza un logo claro en el header (Mikne).
 export const COMPANIES = [
     {
         id: 'SBOINOVA',
@@ -20,6 +23,7 @@ export const COMPANIES = [
         themeDark: 'INOVATECH_DARK',
         logoLight: inovatechLogoLight,
         logoDark: inovatechLogoDark,
+        printLogo: inovatechLogoLight,
         color: '#1B84FF'
     },
     {
@@ -28,9 +32,11 @@ export const COMPANIES = [
         shortLabel: 'Mikne',
         themeLight: 'MIKNE_LIGHT',
         themeDark: 'MIKNE_DARK',
-        // Mikne usa el mismo logo blanco en ambos modos por preferencia de marca.
+        // Mikne usa el mismo logo blanco en ambos modos del header por preferencia de marca.
         logoLight: mikneLogoDark,
         logoDark: mikneLogoDark,
+        // Pero para impresión sobre papel blanco usa el logo negro.
+        printLogo: mikneLogoLight,
         color: '#0066CC'
     },
     {
@@ -41,6 +47,7 @@ export const COMPANIES = [
         themeDark: 'LOG_DARK',
         logoLight: logLogoLight,
         logoDark: logLogoDark,
+        printLogo: logLogoLight,
         color: '#1B4332'
     }
 ];

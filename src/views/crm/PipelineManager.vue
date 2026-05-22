@@ -283,21 +283,21 @@
             </template>
 
             <template v-slot:item.OpportunityName="{ item }">
-                <v-chip
+                <v-btn
                     v-if="item.OpportunityID"
                     :color="oppColor(item.OpportunityID)"
                     size="x-small"
                     variant="flat"
-                    class="font-weight-bold cursor-pointer"
-                    prepend-icon="mdi-link-variant"
+                    class="font-weight-bold px-2"
                     @click.stop="goToOpportunity(item.OpportunityID)"
                 >
-                    {{ item.OpportunityName || ('#' + item.OpportunityID) }}
+                    #{{ item.OpportunityID }}
                     <v-tooltip activator="parent" location="top">
-                        Oportunidad #{{ item.OpportunityID }} · {{ item.OpportunityCount }} cotizaciones
+                        {{ item.OpportunityName || ('Oportunidad #' + item.OpportunityID) }}
+                        · {{ item.OpportunityCount }} cotizaciones
                         · valor {{ formatCurrency(item.OpportunityValue, 'MXN') }}
                     </v-tooltip>
-                </v-chip>
+                </v-btn>
                 <span v-else class="text-caption text-disabled">—</span>
             </template>
 
@@ -488,7 +488,7 @@ const allHeaders = [
     { title: 'Sentimiento', key: 'Sentimiento', align: 'start' },
     { title: 'Cliente', key: 'Cliente', align: 'start', mandatory: true },
     { title: 'Monto', key: 'Monto', align: 'end' },
-    { title: 'Oportunidad', key: 'OpportunityName', align: 'start' },
+    { title: 'Opp.', key: 'OpportunityName', align: 'center', width: '90px', sortable: false },
     { title: 'Etapa', key: 'Etapa', align: 'start' },
     { title: 'Última Acción', key: 'UltimaAccion', align: 'start' },
     { title: 'Vendedor', key: 'Vendedor', align: 'start' },
