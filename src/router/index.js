@@ -54,6 +54,11 @@ const routes = [
         name: 'AdminUsers',
         component: () => import('@/views/admin/Users.vue')
       },
+      {
+        path: 'admin/usuarios', // Gestion de usuarios (rol + vendedores asignados)
+        name: 'UsuariosAdmin',
+        component: () => import('@/views/admin/UsuariosAdmin.vue')
+      },
 
       // Catálogo de Sobres (ID 19)
       {
