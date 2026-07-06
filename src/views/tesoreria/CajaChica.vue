@@ -107,7 +107,7 @@
           <v-card-text class="pa-5">
             <div class="text-center">
               <p class="text-subtitle-1 text-light-muted mb-2">Ingreso Mensual</p>
-              <h3 class="text-h4 text-white">{{ formatCurrency(kpis.ingresoMes) }}</h3>
+              <h3 class="text-h4 text-success">{{ formatCurrency(kpis.ingresoMes) }}</h3>
             </div>
           </v-card-text>
         </v-card>
@@ -118,7 +118,7 @@
           <v-card-text class="pa-5">
             <div class="text-center">
               <p class="text-subtitle-1 text-light-muted mb-2">Egreso Mensual</p>
-              <h3 class="text-h4 text-white">{{ formatCurrency(kpis.egresoMes) }}</h3>
+              <h3 class="text-h4 text-error">{{ formatCurrency(kpis.egresoMes) }}</h3>
             </div>
           </v-card-text>
         </v-card>
@@ -129,7 +129,7 @@
           <v-card-text class="pa-5">
             <div class="text-center">
               <p class="text-subtitle-1 text-light-muted mb-2">Ingreso Anual</p>
-              <h3 class="text-h4 text-white">{{ formatCurrency(kpis.ingresoAnio) }}</h3>
+              <h3 class="text-h4 text-success">{{ formatCurrency(kpis.ingresoAnio) }}</h3>
             </div>
           </v-card-text>
         </v-card>
@@ -140,7 +140,7 @@
           <v-card-text class="pa-5">
             <div class="text-center">
               <p class="text-subtitle-1 text-light-muted mb-2">Egreso Anual</p>
-              <h3 class="text-h4 text-white">{{ formatCurrency(kpis.egresoAnio) }}</h3>
+              <h3 class="text-h4 text-error">{{ formatCurrency(kpis.egresoAnio) }}</h3>
             </div>
           </v-card-text>
         </v-card>

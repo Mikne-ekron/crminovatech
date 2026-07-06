@@ -58,7 +58,7 @@
               <div class="text-subtitle-1 font-weight-bold text-truncate">{{ s.nombre }}</div>
               <div class="text-caption text-light-muted text-truncate mb-3" :title="s.descripcion">{{ s.descripcion || 'Sin descripción' }}</div>
 
-              <div class="text-h5 font-weight-bold mb-1" :class="Number(s.saldo)<0?'text-error':'text-white'">{{ money(s.saldo) }}</div>
+              <div class="text-h5 font-weight-bold mb-1" :class="Number(s.saldo)<0?'text-error':'text-primary'">{{ money(s.saldo) }}</div>
 
               <v-divider class="border-b-dark my-3" />
 
@@ -125,7 +125,7 @@
         <v-col cols="6" md="3">
           <v-card elevation="0" class="rounded-lg card-dark-blue"><v-card-text class="text-center py-4">
             <div class="text-caption text-light-muted mb-1">Movimientos</div>
-            <div class="text-h5 font-weight-bold text-white">{{ detalle.movs.length }}</div>
+            <div class="text-h5 font-weight-bold text-high-emphasis">{{ detalle.movs.length }}</div>
           </v-card-text></v-card>
         </v-col>
       </v-row>
