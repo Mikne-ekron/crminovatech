@@ -620,6 +620,7 @@ const saveOperation = async () => {
         await axios.post('/tesoreria/operaciones', payload);
 
         await fetchOperations();
+        fetchKpis();
         dialog.value.show = false;
 
     } catch (error) {
@@ -645,34 +646,16 @@ const globalBalance = computed(() => {
     return transactionsWithBalance.value[0].saldo;
 });
 
-const kpis = computed(() => {
-    const today = new Date().toISOString().slice(0, 10);
-    const currentMonth = new Date().getMonth();
-    const currentYear = new Date().getFullYear();
-
-    let data = { ingresoHoy: 0, egresoHoy: 0, ingresoMes: 0, egresoMes: 0, ingresoAnio: 0, egresoAnio: 0 };
-
-    transactions.value.forEach(t => {
-        const tDate = new Date(t.fecha);
-        if(isNaN(tDate)) return; 
-
-        const tDateString = tDate.toISOString().slice(0, 10);
-        
-        if (tDateString === today) {
-            data.ingresoHoy += t.ingreso;
-            data.egresoHoy += t.egreso;
-        }
-        if (tDate.getMonth() === currentMonth && tDate.getFullYear() === currentYear) {
-            data.ingresoMes += t.ingreso;
-            data.egresoMes += t.egreso;
-        }
-        if (tDate.getFullYear() === currentYear) {
-            data.ingresoAnio += t.ingreso;
-            data.egresoAnio += t.egreso;
-        }
-    });
-    return data;
-});
+// KPIs de flujo calculados en el backend (hoy / mes / año).
+const kpis = ref({ ingresoHoy: 0, egresoHoy: 0, ingresoMes: 0, egresoMes: 0, ingresoAnio: 0, egresoAnio: 0 });
+const fetchKpis = async () => {
+    try {
+        const r = await axios.get('/tesoreria/kpis');
+        kpis.value = r.data;
+    } catch (e) {
+        console.error('Error cargando KPIs', e);
+    }
+};
 
 const dialogTitle = computed(() => {
     if (dialog.value.type === 'ingreso') return 'Registrar Ingreso';
@@ -719,6 +702,7 @@ const openDialog = (type) => {
 onMounted(() => {
     fetchOperations();
     fetchCatalogos();
+    fetchKpis();
 });
 </script>
 

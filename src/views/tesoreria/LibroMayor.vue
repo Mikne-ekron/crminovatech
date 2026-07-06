@@ -29,6 +29,8 @@
         <v-icon class="mr-2 text-primary">mdi-book-open-variant</v-icon>
         <v-toolbar-title class="text-subtitle-1 font-weight-bold text-white">Todas las operaciones</v-toolbar-title>
         <v-spacer />
+        <v-btn color="success" variant="tonal" prepend-icon="mdi-file-excel" class="mr-3"
+          :disabled="!filtered.length" @click="exportExcel">Exportar Excel</v-btn>
         <v-chip color="primary" variant="flat">{{ filtered.length }} operaciones</v-chip>
       </v-toolbar>
       <v-data-table
@@ -145,6 +147,7 @@ import { ref, computed, onMounted } from 'vue';
 import { useAuthStore } from '@/stores/auth';
 import axios from '@/utils/axios';
 import PageHeader from '@/components/shared/PageHeader.vue';
+import * as XLSX from 'xlsx';
 
 const authStore = useAuthStore();
 const items = ref([]);
@@ -246,6 +249,29 @@ const confirmDelete = async () => {
     await load();
   } catch (e) { notify('Error al eliminar', 'error'); }
   finally { deleting.value = false; }
+};
+
+// Exportar a Excel las operaciones filtradas
+const exportExcel = () => {
+  const rows = filtered.value.map(o => ({
+    Fecha: fmtDate(o.fecha),
+    Concepto: o.concepto || '',
+    Tipo: o.tipo,
+    'Categoría': (o.categoria && o.categoria !== '-') ? o.categoria : '',
+    'Subcategoría': o.subcategoria || '',
+    'Sobre origen': o.sobre_origen || '',
+    'Sobre destino': o.sobre_destino || '',
+    Ingreso: Number(o.ingreso || 0),
+    Egreso: Number(o.egreso || 0),
+    Monto: Number(o.monto || 0),
+    Usuario: o.usuario || '',
+  }));
+  const ws = XLSX.utils.json_to_sheet(rows);
+  ws['!cols'] = [{ wch: 18 }, { wch: 34 }, { wch: 10 }, { wch: 18 }, { wch: 22 }, { wch: 16 }, { wch: 16 }, { wch: 13 }, { wch: 13 }, { wch: 13 }, { wch: 18 }];
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, 'Libro Mayor');
+  const stamp = new Date().toISOString().slice(0, 10);
+  XLSX.writeFile(wb, `libro_mayor_${stamp}.xlsx`);
 };
 
 const ruta = (o) => o.tipo === 'Traspaso' ? `${o.sobre_origen || '-'} → ${o.sobre_destino || '-'}` : (o.sobre_destino || o.sobre_origen || '—');
