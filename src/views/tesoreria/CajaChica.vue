@@ -384,7 +384,7 @@
             </template>
             <template v-slot:item.fecha="{ item }"><span class="text-light-muted">{{ formatDate(item.fecha) }}</span></template>
             <template v-slot:item.concepto="{ item }">
-              <span class="text-truncate d-inline-block" style="max-width:280px" :title="item.concepto">{{ item.concepto || '—' }}</span>
+              <span :title="item.concepto">{{ item.concepto || '—' }}</span>
             </template>
             <template v-slot:item.subtotal="{ item }"><span class="font-weight-bold">{{ formatCurrency(item.subtotal) }}</span></template>
             <template v-slot:item.abonado="{ item }">
@@ -392,9 +392,6 @@
             </template>
             <template v-slot:item.pendiente="{ item }">
               <strong :class="(item.subtotal - item.abonado) > 0 ? 'text-warning' : 'text-success'">{{ formatCurrency(item.subtotal - item.abonado) }}</strong>
-            </template>
-            <template v-slot:item.sel="{ item }">
-              <v-btn size="x-small" color="primary" variant="flat" @click="selectFactura(item)">Elegir</v-btn>
             </template>
           </v-data-table>
         </v-card-text>
@@ -471,15 +468,14 @@ const onSubcatChange = () => {
 // --- Ingresos: tipos y selección de factura de proveedor (SAP) ---
 const facturaModal = ref({ show: false, loading: false, items: [], search: '' });
 const facturaHeaders = [
-    { title: 'Prov.', key: 'card_code' },
-    { title: 'Folio', key: 'folio_sap' },
-    { title: 'Referencia', key: 'numatcard' },
+    { title: 'Prov.', key: 'card_code', width: 62, sortable: false },
+    { title: 'Folio', key: 'folio_sap', width: 76 },
+    { title: 'Ref.', key: 'numatcard', width: 84 },
     { title: 'Concepto', key: 'concepto' },
-    { title: 'Fecha', key: 'fecha' },
-    { title: 'Valor', key: 'subtotal', align: 'end' },
-    { title: 'Abonado', key: 'abonado', align: 'end' },
-    { title: 'Pendiente', key: 'pendiente', align: 'end' },
-    { title: '', key: 'sel', align: 'end', sortable: false },
+    { title: 'Fecha', key: 'fecha', width: 92 },
+    { title: 'Valor', key: 'subtotal', align: 'end', width: 108 },
+    { title: 'Abonado', key: 'abonado', align: 'end', width: 100 },
+    { title: 'Pendiente', key: 'pendiente', align: 'end', width: 108 },
 ];
 
 const onTipoIngresoChange = (t) => {
@@ -727,5 +723,15 @@ onMounted(() => {
 </script>
 
 <style scoped>
+/* Todo cabe dentro del modal: layout fijo + concepto recortado, sin scroll horizontal */
+.factura-table :deep(table) { table-layout: fixed; width: 100%; }
+.factura-table :deep(th),
+.factura-table :deep(td) {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font-size: 12px;
+  padding-inline: 8px !important;
+}
 .factura-table :deep(tbody tr) { cursor: pointer; }
 </style>
