@@ -230,15 +230,62 @@
                         ></v-text-field>
                     </v-col>
 
-                    <v-col cols="12" v-if="dialog.type === 'ingreso'">
-                        <v-select
-                            v-model="editedItem.sobreDestino"
-                            :items="sobresList"
-                            label="Guardar en Sobre"
-                            prepend-inner-icon="mdi-email"
-                            variant="outlined"
-                        ></v-select>
-                    </v-col>
+                    <template v-if="dialog.type === 'ingreso'">
+                        <v-col cols="12" class="pb-1">
+                            <div class="text-caption text-light-muted mb-1">Tipo de ingreso</div>
+                            <v-btn-toggle v-model="editedItem.tipoIngreso" mandatory divided density="comfortable"
+                                color="success" class="flex-wrap w-100" @update:model-value="onTipoIngresoChange">
+                                <v-btn value="Abono de Deudor" size="small">Abono de Deudor</v-btn>
+                                <v-btn value="Cheque" size="small">Cheque</v-btn>
+                                <v-btn value="Caja Chica" size="small">Caja Chica</v-btn>
+                                <v-btn value="Préstamos" size="small">Préstamos</v-btn>
+                            </v-btn-toggle>
+                        </v-col>
+
+                        <!-- Abono de Deudor: Factura (SAP) o Manual -->
+                        <v-col cols="12" v-if="editedItem.tipoIngreso === 'Abono de Deudor'" class="pt-1">
+                            <v-btn-toggle v-model="editedItem.modoAbono" mandatory divided density="compact"
+                                color="primary" class="mb-3" @update:model-value="onModoAbonoChange">
+                                <v-btn value="Factura" size="small">Factura (SAP)</v-btn>
+                                <v-btn value="Manual" size="small">Manual</v-btn>
+                            </v-btn-toggle>
+
+                            <template v-if="editedItem.modoAbono === 'Factura'">
+                                <v-btn block color="primary" variant="tonal" prepend-icon="mdi-file-search-outline" @click="openFacturaModal">
+                                    {{ editedItem.factura ? 'Cambiar factura' : 'Seleccionar factura de proveedor (SAP)' }}
+                                </v-btn>
+                                <v-alert v-if="editedItem.factura" type="info" variant="tonal" density="compact" class="mt-2">
+                                    <div class="font-weight-bold">Folio {{ editedItem.factura.folio_sap }} · Ref: {{ editedItem.factura.numatcard || '—' }}</div>
+                                    <div class="text-caption my-1">{{ editedItem.factura.concepto || 'Sin concepto' }}</div>
+                                    <div>Valor: <strong>{{ formatCurrency(editedItem.factura.subtotal) }}</strong>
+                                        · Ya abonado: {{ formatCurrency(editedItem.factura.abonado) }}
+                                        · Pendiente: <strong>{{ formatCurrency(editedItem.factura.subtotal - editedItem.factura.abonado) }}</strong>
+                                    </div>
+                                </v-alert>
+                            </template>
+
+                            <v-text-field v-else v-model="editedItem.origenIngreso" label="Origen (captura libre) *"
+                                prepend-inner-icon="mdi-text" variant="outlined" :rules="[reqRule]"></v-text-field>
+                        </v-col>
+
+                        <!-- Cheque -->
+                        <v-col cols="12" v-if="editedItem.tipoIngreso === 'Cheque'">
+                            <v-text-field v-model="editedItem.numCheque" label="Número de cheque *"
+                                prepend-inner-icon="mdi-checkbook" variant="outlined" :rules="[reqRule]"></v-text-field>
+                        </v-col>
+
+                        <!-- Caja Chica / Préstamos -->
+                        <v-col cols="12" v-if="editedItem.tipoIngreso === 'Caja Chica' || editedItem.tipoIngreso === 'Préstamos'">
+                            <v-text-field v-model="editedItem.origenIngreso" label="Origen (captura libre) *"
+                                prepend-inner-icon="mdi-text" variant="outlined" :rules="[reqRule]"></v-text-field>
+                        </v-col>
+
+                        <!-- Sobre destino: SIEMPRE manual (default Sergio para Abono de Deudor) -->
+                        <v-col cols="12">
+                            <v-select v-model="editedItem.sobreDestino" :items="sobresList" label="Sobre destino *"
+                                prepend-inner-icon="mdi-email" variant="outlined" :rules="[reqRule]"></v-select>
+                        </v-col>
+                    </template>
 
                     <v-col cols="12" v-if="dialog.type === 'egreso'">
                         <v-select
@@ -273,7 +320,7 @@
                         <v-text-field
                             v-if="isManualSub"
                             v-model="editedItem.subcategoriaManual"
-                            label="Concepto (captura manual) *"
+                            label="Subcategoría (captura manual) *"
                             prepend-inner-icon="mdi-pencil"
                             variant="outlined"
                             :rules="[reqRule]"
@@ -304,6 +351,47 @@
             <v-btn variant="text" @click="dialog.show = false">Cancelar</v-btn>
             <v-btn :color="dialogColor" variant="flat" @click="saveOperation">Guardar Operación</v-btn>
         </v-card-actions>
+      </v-card>
+    </v-dialog>
+
+    <!-- MODAL: selección de factura de proveedor SAP (Trade/Log, pagadas) -->
+    <v-dialog v-model="facturaModal.show" max-width="1040" scrollable>
+      <v-card class="card-dark-blue">
+        <v-toolbar color="primary" density="compact">
+          <v-icon class="ml-4">mdi-file-search-outline</v-icon>
+          <v-toolbar-title class="font-weight-bold">Facturas de proveedor pagadas (SAP) — Trade / Log</v-toolbar-title>
+          <v-btn icon @click="facturaModal.show = false"><v-icon>mdi-close</v-icon></v-btn>
+        </v-toolbar>
+        <v-card-text style="max-height:70vh">
+          <v-text-field v-model="facturaModal.search" prepend-inner-icon="mdi-magnify"
+            placeholder="Buscar por folio, referencia o concepto…" density="compact" variant="outlined"
+            hide-details class="mb-3"></v-text-field>
+          <v-data-table
+            :headers="facturaHeaders" :items="facturaModal.items" :search="facturaModal.search"
+            :loading="facturaModal.loading" density="compact" class="bg-transparent dark-table"
+            :items-per-page="10"
+          >
+            <template v-slot:item.card_code="{ item }">
+              <v-chip size="x-small" variant="tonal" :color="item.card_code === 'P0148' ? 'primary' : 'info'">
+                {{ item.card_code === 'P0148' ? 'Trade' : 'Log' }}
+              </v-chip>
+            </template>
+            <template v-slot:item.fecha="{ item }"><span class="text-light-muted">{{ formatDate(item.fecha) }}</span></template>
+            <template v-slot:item.concepto="{ item }">
+              <span class="text-truncate d-inline-block" style="max-width:280px" :title="item.concepto">{{ item.concepto || '—' }}</span>
+            </template>
+            <template v-slot:item.subtotal="{ item }"><span class="font-weight-bold">{{ formatCurrency(item.subtotal) }}</span></template>
+            <template v-slot:item.abonado="{ item }">
+              <span :class="item.abonado > 0 ? 'text-success' : 'text-light-muted'">{{ formatCurrency(item.abonado) }}</span>
+            </template>
+            <template v-slot:item.pendiente="{ item }">
+              <strong :class="(item.subtotal - item.abonado) > 0 ? 'text-warning' : 'text-success'">{{ formatCurrency(item.subtotal - item.abonado) }}</strong>
+            </template>
+            <template v-slot:item.sel="{ item }">
+              <v-btn size="x-small" color="primary" variant="flat" @click="selectFactura(item)">Elegir</v-btn>
+            </template>
+          </v-data-table>
+        </v-card-text>
       </v-card>
     </v-dialog>
 
@@ -374,6 +462,55 @@ const onSubcatChange = () => {
     if (!isManualSub.value) editedItem.value.subcategoriaManual = '';
 };
 
+// --- Ingresos: tipos y selección de factura de proveedor (SAP) ---
+const facturaModal = ref({ show: false, loading: false, items: [], search: '' });
+const facturaHeaders = [
+    { title: 'Prov.', key: 'card_code' },
+    { title: 'Folio', key: 'folio_sap' },
+    { title: 'Referencia', key: 'numatcard' },
+    { title: 'Concepto', key: 'concepto' },
+    { title: 'Fecha', key: 'fecha' },
+    { title: 'Valor', key: 'subtotal', align: 'end' },
+    { title: 'Abonado', key: 'abonado', align: 'end' },
+    { title: 'Pendiente', key: 'pendiente', align: 'end' },
+    { title: '', key: 'sel', align: 'end', sortable: false },
+];
+
+const onTipoIngresoChange = (t) => {
+    editedItem.value.factura = null;
+    editedItem.value.numCheque = '';
+    editedItem.value.origenIngreso = '';
+    editedItem.value.modoAbono = 'Factura';
+    // El sobre siempre es manual; solo Abono de Deudor trae "Sergio" por default.
+    editedItem.value.sobreDestino = (t === 'Abono de Deudor') ? 'Sergio' : null;
+};
+const onModoAbonoChange = () => {
+    editedItem.value.factura = null;
+    editedItem.value.origenIngreso = '';
+};
+
+const openFacturaModal = async () => {
+    facturaModal.value.show = true;
+    facturaModal.value.loading = true;
+    try {
+        const r = await axios.get('/tesoreria/sap/facturas-proveedor');
+        facturaModal.value.items = r.data.map(f => ({ ...f, pendiente: Number(f.subtotal) - Number(f.abonado || 0) }));
+    } catch (e) {
+        console.error('Error cargando facturas SAP', e);
+        alert('Error al cargar las facturas de proveedor de SAP');
+    } finally {
+        facturaModal.value.loading = false;
+    }
+};
+
+const selectFactura = (f) => {
+    editedItem.value.factura = f;
+    const pendiente = Number(f.subtotal) - Number(f.abonado || 0);
+    editedItem.value.monto = pendiente > 0 ? pendiente : Number(f.subtotal);
+    if (!editedItem.value.concepto) editedItem.value.concepto = `Abono deudor - Folio ${f.folio_sap}`;
+    facturaModal.value.show = false;
+};
+
 // ARRAY VACÍO: Se llenará desde la BD
 const transactions = ref([]);
 
@@ -425,24 +562,55 @@ const saveOperation = async () => {
     const { valid: isFormValid } = await form.value.validate();
     if (!isFormValid) return;
 
+    const esIngreso = dialog.value.type === 'ingreso';
+    const esEgreso = dialog.value.type === 'egreso';
+
+    // Abono de Deudor por Factura exige una factura seleccionada
+    if (esIngreso && editedItem.value.tipoIngreso === 'Abono de Deudor'
+        && editedItem.value.modoAbono === 'Factura' && !editedItem.value.factura) {
+        alert('Selecciona una factura de proveedor de SAP.');
+        return;
+    }
+
     try {
-        const esEgreso = dialog.value.type === 'egreso';
         const subcatFinal = isManualSub.value ? editedItem.value.subcategoriaManual : editedItem.value.subcategoria;
         const payload = {
             monto: parseFloat(editedItem.value.monto),
             concepto: editedItem.value.concepto,
             usuario: authStore.user?.name || 'Usuario',
-            tipo: dialog.value.type === 'ingreso' ? 'Ingreso' : (esEgreso ? 'Egreso' : 'Traspaso'),
+            tipo: esIngreso ? 'Ingreso' : (esEgreso ? 'Egreso' : 'Traspaso'),
             // Categoría/subcategoría solo aplican a egresos
             categoria: esEgreso ? (editedItem.value.categoria || null) : null,
             subcategoria: esEgreso ? (subcatFinal || null) : null,
             sobreOrigen: (esEgreso || dialog.value.type === 'traspaso') ? editedItem.value.sobreOrigen : null,
-            sobreDestino: (dialog.value.type === 'ingreso' || dialog.value.type === 'traspaso') ? editedItem.value.sobreDestino : null,
+            sobreDestino: (esIngreso || dialog.value.type === 'traspaso') ? editedItem.value.sobreDestino : null,
         };
+
+        if (esIngreso) {
+            const t = editedItem.value.tipoIngreso;
+            payload.tipoIngreso = t;
+            if (t === 'Cheque') payload.numCheque = editedItem.value.numCheque;
+            const usaOrigen = (t === 'Caja Chica' || t === 'Préstamos'
+                || (t === 'Abono de Deudor' && editedItem.value.modoAbono === 'Manual'));
+            if (usaOrigen) payload.origenIngreso = editedItem.value.origenIngreso;
+            if (t === 'Abono de Deudor' && editedItem.value.modoAbono === 'Factura' && editedItem.value.factura) {
+                const f = editedItem.value.factura;
+                payload.conciliacion = {
+                    sap_docentry: f.docentry,
+                    sap_docnum: f.folio_sap,
+                    numatcard: f.numatcard,
+                    card_code: f.card_code,
+                    card_name: f.card_name,
+                    subtotal: f.subtotal,
+                    concepto: f.concepto,
+                    monto_abonado: parseFloat(editedItem.value.monto),
+                };
+            }
+        }
 
         await axios.post('/tesoreria/operaciones', payload);
 
-        await fetchOperations(); 
+        await fetchOperations();
         dialog.value.show = false;
 
     } catch (error) {
@@ -529,7 +697,13 @@ const getTypeColor = (type) => {
 
 const openDialog = (type) => {
     dialog.value.type = type;
-    editedItem.value = { monto: null, concepto: '', sobreOrigen: null, sobreDestino: null, categoria: null, subcategoria: null, subcategoriaManual: '' };
+    editedItem.value = {
+        monto: null, concepto: '', sobreOrigen: null, sobreDestino: null,
+        categoria: null, subcategoria: null, subcategoriaManual: '',
+        tipoIngreso: 'Abono de Deudor', modoAbono: 'Factura',
+        origenIngreso: '', numCheque: '', factura: null
+    };
+    if (type === 'ingreso') editedItem.value.sobreDestino = 'Sergio';
     dialog.value.show = true;
 };
 
