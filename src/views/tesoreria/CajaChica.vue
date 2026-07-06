@@ -363,13 +363,19 @@
           <v-btn icon @click="facturaModal.show = false"><v-icon>mdi-close</v-icon></v-btn>
         </v-toolbar>
         <v-card-text style="max-height:70vh">
-          <v-text-field v-model="facturaModal.search" prepend-inner-icon="mdi-magnify"
-            placeholder="Buscar por folio, referencia o concepto…" density="compact" variant="outlined"
-            hide-details class="mb-3"></v-text-field>
+          <div class="d-flex align-center mb-2">
+            <v-text-field v-model="facturaModal.search" prepend-inner-icon="mdi-magnify"
+              placeholder="Buscar por folio, referencia o concepto…" density="compact" variant="outlined"
+              hide-details></v-text-field>
+          </div>
+          <div class="text-caption text-light-muted mb-2">
+            <v-icon size="14" class="mr-1">mdi-cursor-default-click</v-icon>Haz clic en una factura para seleccionarla.
+          </div>
           <v-data-table
             :headers="facturaHeaders" :items="facturaModal.items" :search="facturaModal.search"
-            :loading="facturaModal.loading" density="compact" class="bg-transparent dark-table"
-            :items-per-page="10"
+            :loading="facturaModal.loading" density="compact" class="bg-transparent dark-table factura-table"
+            :items-per-page="10" hover
+            @click:row="onRowSelectFactura"
           >
             <template v-slot:item.card_code="{ item }">
               <v-chip size="x-small" variant="tonal" :color="item.card_code === 'P0148' ? 'primary' : 'info'">
@@ -504,11 +510,18 @@ const openFacturaModal = async () => {
 };
 
 const selectFactura = (f) => {
-    editedItem.value.factura = f;
-    const pendiente = Number(f.subtotal) - Number(f.abonado || 0);
-    editedItem.value.monto = pendiente > 0 ? pendiente : Number(f.subtotal);
-    if (!editedItem.value.concepto) editedItem.value.concepto = `Abono deudor - Folio ${f.folio_sap}`;
+    if (!f) return;
+    const row = f.raw || f; // robusto ante distintas versiones de Vuetify
+    editedItem.value.factura = row;
+    const pendiente = Number(row.subtotal) - Number(row.abonado || 0);
+    editedItem.value.monto = pendiente > 0 ? pendiente : Number(row.subtotal);
+    if (!editedItem.value.concepto) editedItem.value.concepto = `Abono deudor - Folio ${row.folio_sap}`;
     facturaModal.value.show = false;
+};
+
+// Selección al hacer clic en cualquier parte de la fila
+const onRowSelectFactura = (_event, row) => {
+    selectFactura(row?.item ?? row);
 };
 
 // ARRAY VACÍO: Se llenará desde la BD
@@ -712,3 +725,7 @@ onMounted(() => {
     fetchCatalogos();
 });
 </script>
+
+<style scoped>
+.factura-table :deep(tbody tr) { cursor: pointer; }
+</style>
