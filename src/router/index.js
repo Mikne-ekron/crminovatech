@@ -46,6 +46,27 @@ const routes = [
         component: () => import('@/views/tesoreria/Sobres.vue')
       },
 
+      // Conteo de Efectivo
+      {
+        path: 'tesoreria/conteo-efectivo',
+        name: 'ConteoEfectivo',
+        component: () => import('@/views/tesoreria/ConteoEfectivo.vue')
+      },
+
+      // Conciliación
+      {
+        path: 'tesoreria/conciliacion',
+        name: 'ConciliacionTes',
+        component: () => import('@/views/tesoreria/Conciliacion.vue')
+      },
+
+      // Libro Mayor
+      {
+        path: 'tesoreria/libro-mayor',
+        name: 'LibroMayor',
+        component: () => import('@/views/tesoreria/LibroMayor.vue')
+      },
+
       // --- GESTIÓN (ADMINISTRACIÓN) ---
 
       // Autorizaciones / Usuarios (ID 17)
