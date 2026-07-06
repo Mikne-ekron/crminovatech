@@ -112,6 +112,19 @@
               <v-select v-model="edit.categoria" :items="categorias" item-title="nombre" item-value="nombre" label="Categoría" variant="outlined" clearable @update:model-value="edit.subcategoria=null" />
               <v-select v-if="subcatsEdit.length" v-model="edit.subcategoria" :items="subcatsEdit" item-title="nombre" item-value="nombre" label="Subcategoría" variant="outlined" clearable />
             </template>
+
+            <!-- Cambiar factura conciliada (Abono de Deudor por factura) -->
+            <template v-if="edit.tieneConciliacion">
+              <v-divider class="border-b-dark my-3" />
+              <div class="text-caption text-light-muted mb-1">Factura conciliada</div>
+              <v-alert v-if="edit.facturaNueva" type="success" variant="tonal" density="compact" class="mb-2">
+                Nueva: <strong>Folio {{ edit.facturaNueva.folio_sap }}</strong> · Ref {{ edit.facturaNueva.numatcard || '—' }} · {{ money(edit.facturaNueva.subtotal) }}
+              </v-alert>
+              <v-alert v-else-if="edit.facturaActual" type="info" variant="tonal" density="compact" class="mb-2">
+                Actual: <strong>Folio {{ edit.facturaActual.folio_sap }}</strong> · Ref {{ edit.facturaActual.numatcard || '—' }} · {{ money(edit.facturaActual.subtotal) }}
+              </v-alert>
+              <v-btn size="small" color="primary" variant="tonal" prepend-icon="mdi-file-search-outline" @click="openFacturaModal">Cambiar factura</v-btn>
+            </template>
           </v-form>
         </v-card-text>
         <v-card-actions class="border-t-dark px-4 pb-3">
@@ -119,6 +132,34 @@
           <v-btn variant="text" @click="edit.show=false">Cancelar</v-btn>
           <v-btn color="primary" variant="flat" :loading="saving" @click="save">Guardar</v-btn>
         </v-card-actions>
+      </v-card>
+    </v-dialog>
+
+    <!-- MODAL: cambiar factura conciliada -->
+    <v-dialog v-model="facturaModal.show" max-width="1040" scrollable>
+      <v-card class="card-dark-blue">
+        <v-toolbar color="primary" density="compact">
+          <v-icon class="ml-4">mdi-file-search-outline</v-icon>
+          <v-toolbar-title class="font-weight-bold">Selecciona la nueva factura (Trade / Log, pagadas)</v-toolbar-title>
+          <v-btn icon @click="facturaModal.show=false"><v-icon>mdi-close</v-icon></v-btn>
+        </v-toolbar>
+        <v-card-text style="max-height:70vh">
+          <v-text-field v-model="facturaModal.search" prepend-inner-icon="mdi-magnify"
+            placeholder="Buscar por folio, referencia o concepto…" density="compact" variant="outlined" hide-details class="mb-2" />
+          <div class="text-caption text-light-muted mb-2"><v-icon size="14" class="mr-1">mdi-cursor-default-click</v-icon>Haz clic en una factura para seleccionarla.</div>
+          <v-data-table :headers="facturaHeaders" :items="facturaModal.items" :search="facturaModal.search"
+            :loading="facturaModal.loading" density="compact" class="bg-transparent dark-table factura-table"
+            :items-per-page="10" hover @click:row="onRowFacturaEdit">
+            <template v-slot:item.card_code="{ item }">
+              <v-chip size="x-small" variant="tonal" :color="item.card_code === 'P0148' ? 'primary' : 'info'">{{ item.card_code === 'P0148' ? 'Trade' : 'Log' }}</v-chip>
+            </template>
+            <template v-slot:item.fecha="{ item }"><span class="text-light-muted">{{ fmtDate(item.fecha) }}</span></template>
+            <template v-slot:item.concepto="{ item }"><span :title="item.concepto">{{ item.concepto || '—' }}</span></template>
+            <template v-slot:item.subtotal="{ item }">{{ money(item.subtotal) }}</template>
+            <template v-slot:item.abonado="{ item }"><span :class="item.abonado>0?'text-success':'text-light-muted'">{{ money(item.abonado) }}</span></template>
+            <template v-slot:item.pendiente="{ item }"><strong>{{ money(item.subtotal - item.abonado) }}</strong></template>
+          </v-data-table>
+        </v-card-text>
       </v-card>
     </v-dialog>
 
@@ -205,16 +246,49 @@ const onRow = async (_e, row) => {
 };
 
 // Editar
-const edit = ref({ show: false, id: null, tipo: 'Ingreso', monto: null, concepto: '', sobreOrigen: null, sobreDestino: null, categoria: null, subcategoria: null });
+const edit = ref({ show: false, id: null, tipo: 'Ingreso', monto: null, concepto: '', sobreOrigen: null, sobreDestino: null, categoria: null, subcategoria: null, tieneConciliacion: false, facturaActual: null, facturaNueva: null });
 const subcatsEdit = computed(() => categorias.value.find(c => c.nombre === edit.value.categoria)?.subcategorias || []);
 const onTipoChange = () => { /* mantener valores; el template oculta lo no aplicable */ };
-const openEdit = (o) => {
+const openEdit = async (o) => {
   edit.value = {
     show: true, id: o.id, tipo: o.tipo, monto: Number(o.monto), concepto: o.concepto,
     sobreOrigen: o.sobre_origen || null, sobreDestino: o.sobre_destino || null,
     categoria: (o.categoria && o.categoria !== '-') ? o.categoria : null, subcategoria: o.subcategoria || null,
+    tieneConciliacion: false, facturaActual: null, facturaNueva: null,
   };
+  try {
+    const r = await axios.get(`/tesoreria/operaciones/${o.id}`);
+    const c = (r.data.conciliaciones || [])[0];
+    if (c) {
+      edit.value.tieneConciliacion = true;
+      edit.value.facturaActual = { folio_sap: c.sap_docnum, numatcard: c.numatcard, subtotal: c.subtotal, docentry: c.sap_docentry };
+    }
+  } catch (e) { /* sin conciliación */ }
 };
+
+// Modal de selección de factura para el cambio en edición
+const facturaModal = ref({ show: false, loading: false, items: [], search: '' });
+const facturaHeaders = [
+  { title: 'Prov.', key: 'card_code', width: 62, sortable: false },
+  { title: 'Folio', key: 'folio_sap', width: 76 },
+  { title: 'Ref.', key: 'numatcard', width: 84 },
+  { title: 'Concepto', key: 'concepto' },
+  { title: 'Fecha', key: 'fecha', width: 92 },
+  { title: 'Valor', key: 'subtotal', align: 'end', width: 108 },
+  { title: 'Abonado', key: 'abonado', align: 'end', width: 100 },
+  { title: 'Pendiente', key: 'pendiente', align: 'end', width: 108 },
+];
+const openFacturaModal = async () => {
+  facturaModal.value.show = true;
+  facturaModal.value.loading = true;
+  try {
+    const r = await axios.get('/tesoreria/sap/facturas-proveedor');
+    facturaModal.value.items = r.data.map(f => ({ ...f, pendiente: Number(f.subtotal) - Number(f.abonado || 0) }));
+  } catch (e) { notify('Error cargando facturas SAP', 'error'); }
+  finally { facturaModal.value.loading = false; }
+};
+const selectFacturaEdit = (f) => { const row = f?.raw ?? f; if (row) edit.value.facturaNueva = row; facturaModal.value.show = false; };
+const onRowFacturaEdit = (_e, row) => selectFacturaEdit(row?.item ?? row);
 const save = async () => {
   const { valid } = await form.value.validate();
   if (!valid) return;
@@ -228,6 +302,7 @@ const save = async () => {
       subcategoria: edit.value.tipo === 'Egreso' ? edit.value.subcategoria : null,
       sobreOrigen: edit.value.tipo !== 'Ingreso' ? edit.value.sobreOrigen : null,
       sobreDestino: edit.value.tipo !== 'Egreso' ? edit.value.sobreDestino : null,
+      docentry: edit.value.facturaNueva ? edit.value.facturaNueva.docentry : undefined,
       usuario: authStore.user?.name || 'Usuario',
     });
     notify('Operación actualizada');
@@ -284,4 +359,9 @@ onMounted(load);
 
 <style scoped>
 .cursor-table :deep(tbody tr) { cursor: pointer; }
+.factura-table :deep(table) { table-layout: fixed; width: 100%; }
+.factura-table :deep(th), .factura-table :deep(td) {
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-size: 12px; padding-inline: 8px !important;
+}
+.factura-table :deep(tbody tr) { cursor: pointer; }
 </style>
