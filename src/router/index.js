@@ -46,27 +46,6 @@ const routes = [
         component: () => import('@/views/tesoreria/Sobres.vue')
       },
 
-      // Ingresos - Conciliación de facturas
-      {
-        path: 'tesoreria/ingresos',
-        name: 'IngresosTes',
-        component: () => import('@/views/tesoreria/Ingresos.vue')
-      },
-
-      // Egresos
-      {
-        path: 'tesoreria/egresos',
-        name: 'EgresosTes',
-        component: () => import('@/views/tesoreria/Egresos.vue')
-      },
-
-      // Reportes - Estado de cuenta
-      {
-        path: 'tesoreria/reportes',
-        name: 'ReportesTes',
-        component: () => import('@/views/tesoreria/Reportes.vue')
-      },
-
       // --- GESTIÓN (ADMINISTRACIÓN) ---
 
       // Autorizaciones / Usuarios (ID 17)
