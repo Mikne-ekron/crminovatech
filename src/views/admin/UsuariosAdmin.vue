@@ -29,7 +29,8 @@ const headers = [
     { title: 'Rol', key: 'RoleName', align: 'start' },
     { title: 'Activo', key: 'IsActive', align: 'center' },
     { title: 'Cambia empresa', key: 'CanSwitchCompany', align: 'center' },
-    { title: 'Vendedores asignados', key: 'SlpCounts', align: 'start' }
+    { title: 'Vendedores asignados', key: 'SlpCounts', align: 'start' },
+    { title: '', key: 'acciones', align: 'end', sortable: false }
 ];
 
 const filteredUsers = computed(() => {
@@ -114,6 +115,47 @@ const totalAssigned = (user) => {
     return Object.values(user.SlpCounts).reduce((a, n) => a + n, 0);
 };
 
+// --- Crear usuario ---
+const showCreate = ref(false);
+const creating = ref(false);
+const newUser = ref({ Email: '', FullName: '', RoleID: null, IsActive: true, CanSwitchCompany: false });
+const openCreate = () => {
+    newUser.value = { Email: '', FullName: '', RoleID: (roles.value[0]?.RoleID ?? null), IsActive: true, CanSwitchCompany: false };
+    showCreate.value = true;
+};
+const createUser = async () => {
+    const email = (newUser.value.Email || '').trim();
+    if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) { alert('Ingresa un email válido'); return; }
+    creating.value = true;
+    try {
+        await axios.post('/admin/users-admin', newUser.value);
+        showCreate.value = false;
+        await fetchUsers();
+    } catch (e) {
+        alert(e.response?.data?.msg || 'Error creando usuario');
+    } finally {
+        creating.value = false;
+    }
+};
+
+// --- Eliminar usuario ---
+const showDelete = ref(false);
+const deleting = ref(false);
+const userToDelete = ref(null);
+const askDelete = (user) => { userToDelete.value = user; showDelete.value = true; };
+const confirmDelete = async () => {
+    deleting.value = true;
+    try {
+        await axios.delete(`/admin/users-admin/${userToDelete.value.UserID}`);
+        showDelete.value = false;
+        await fetchUsers();
+    } catch (e) {
+        alert(e.response?.data?.msg || 'Error eliminando usuario');
+    } finally {
+        deleting.value = false;
+    }
+};
+
 onMounted(fetchUsers);
 </script>
 
@@ -130,9 +172,14 @@ onMounted(fetchUsers);
                         Rol y restricciones de vendedores visibles por empresa
                     </p>
                 </div>
-                <v-btn color="primary" prepend-icon="mdi-refresh" elevation="0" @click="fetchUsers" :loading="loading">
-                    Actualizar
-                </v-btn>
+                <div class="d-flex ga-2">
+                    <v-btn color="success" prepend-icon="mdi-account-plus" elevation="0" @click="openCreate">
+                        Nuevo usuario
+                    </v-btn>
+                    <v-btn color="primary" prepend-icon="mdi-refresh" elevation="0" @click="fetchUsers" :loading="loading">
+                        Actualizar
+                    </v-btn>
+                </div>
             </v-col>
         </v-row>
 
@@ -192,6 +239,14 @@ onMounted(fetchUsers);
                     >
                         {{ c.label.split(' ')[0] }}: {{ (item.SlpCounts && item.SlpCounts[c.id]) || 0 }}
                     </v-chip>
+                </template>
+                <template v-slot:item.acciones="{ item }">
+                    <v-tooltip text="Eliminar usuario" location="top">
+                        <template v-slot:activator="{ props }">
+                            <v-btn v-bind="props" icon="mdi-delete-outline" size="small" variant="text" color="error"
+                                @click.stop="askDelete(item)"></v-btn>
+                        </template>
+                    </v-tooltip>
                 </template>
             </v-data-table>
         </v-card>
@@ -278,6 +333,59 @@ onMounted(fetchUsers);
                     <v-btn color="primary" variant="flat" :loading="savingDialog" @click="save">
                         Guardar cambios
                     </v-btn>
+                </v-card-actions>
+            </v-card>
+        </v-dialog>
+
+        <!-- Dialog: nuevo usuario -->
+        <v-dialog v-model="showCreate" max-width="480" persistent>
+            <v-card>
+                <v-toolbar color="success" density="comfortable">
+                    <v-toolbar-title class="font-weight-bold"><v-icon start>mdi-account-plus</v-icon>Nuevo usuario</v-toolbar-title>
+                    <v-spacer></v-spacer>
+                    <v-btn icon="mdi-close" variant="text" color="white" @click="showCreate = false"></v-btn>
+                </v-toolbar>
+                <v-card-text class="pa-4">
+                    <v-alert type="info" variant="tonal" density="compact" class="mb-4">
+                        El acceso es sin contraseña: el usuario inicia sesión con su email y un código.
+                        Basta con registrar su correo.
+                    </v-alert>
+                    <v-text-field v-model="newUser.Email" label="Email *" type="email" variant="outlined" density="comfortable"
+                        prepend-inner-icon="mdi-email-outline" class="mb-2"></v-text-field>
+                    <v-text-field v-model="newUser.FullName" label="Nombre completo" variant="outlined" density="comfortable"
+                        prepend-inner-icon="mdi-account" class="mb-2"></v-text-field>
+                    <v-select v-model="newUser.RoleID" :items="roles" item-title="RoleName" item-value="RoleID"
+                        label="Rol" variant="outlined" density="comfortable" prepend-inner-icon="mdi-shield-account" class="mb-2"></v-select>
+                    <div class="d-flex ga-6">
+                        <v-switch v-model="newUser.IsActive" label="Activo" color="success" density="compact" hide-details></v-switch>
+                        <v-switch v-model="newUser.CanSwitchCompany" label="Puede cambiar de empresa" color="primary" density="compact" hide-details></v-switch>
+                    </div>
+                </v-card-text>
+                <v-divider></v-divider>
+                <v-card-actions class="pa-3">
+                    <v-spacer></v-spacer>
+                    <v-btn variant="text" @click="showCreate = false">Cancelar</v-btn>
+                    <v-btn color="success" variant="flat" :loading="creating" @click="createUser">Crear usuario</v-btn>
+                </v-card-actions>
+            </v-card>
+        </v-dialog>
+
+        <!-- Dialog: confirmar eliminación -->
+        <v-dialog v-model="showDelete" max-width="440">
+            <v-card>
+                <v-card-text class="pt-6 text-center">
+                    <v-avatar color="error" variant="tonal" size="60" class="mb-3"><v-icon size="32">mdi-account-remove</v-icon></v-avatar>
+                    <h3 class="text-h6 font-weight-bold mb-1">¿Eliminar usuario?</h3>
+                    <p class="text-medium-emphasis">
+                        Se eliminará a <strong>{{ userToDelete?.FullName }}</strong> ({{ userToDelete?.Email }}).
+                        Si está vinculado a un empleado de RH, se desvinculará sin borrar su registro.
+                    </p>
+                </v-card-text>
+                <v-divider></v-divider>
+                <v-card-actions class="pa-3">
+                    <v-spacer></v-spacer>
+                    <v-btn variant="text" @click="showDelete = false">Cancelar</v-btn>
+                    <v-btn color="error" variant="flat" :loading="deleting" @click="confirmDelete">Eliminar</v-btn>
                 </v-card-actions>
             </v-card>
         </v-dialog>
