@@ -62,7 +62,7 @@
       </v-col>
 
       <v-col cols="12" md="3" class="py-0 mb-3">
-        <v-card elevation="0" class="rounded-lg card-dark-blue border-b-dark" style="border-bottom: 4px solid #03c9d7 !important;">
+        <v-card elevation="0" class="rounded-lg cursor-pointer card-dark-blue border-b-dark" style="border-bottom: 4px solid #03c9d7 !important;" @click="openSaldos">
           <v-card-text class="pa-5">
             <div class="d-flex align-center ga-4">
               <v-btn icon class="bg-info elevation-0" dark>
@@ -253,7 +253,7 @@
     </v-card>
 
     <v-dialog v-model="dialog.show" max-width="500px">
-      <v-card class="card-dark-blue">
+      <v-card class="capture-glass rounded-lg">
         <v-toolbar :color="dialogColor" density="compact">
           <v-toolbar-title class="font-weight-bold">{{ dialogTitle }}</v-toolbar-title>
           <v-btn icon @click="dialog.show = false"><v-icon>mdi-close</v-icon></v-btn>
@@ -428,6 +428,48 @@
       </v-card>
     </v-dialog>
 
+    <!-- MODAL: desglose de saldos por sobre -->
+    <v-dialog v-model="saldosDialog" max-width="520">
+      <v-card class="capture-glass rounded-lg">
+        <v-toolbar color="info" density="compact">
+          <v-icon class="ml-4">mdi-wallet-outline</v-icon>
+          <v-toolbar-title class="font-weight-bold">Saldos por sobre</v-toolbar-title>
+          <v-btn icon @click="saldosDialog = false"><v-icon>mdi-close</v-icon></v-btn>
+        </v-toolbar>
+        <v-card-text class="pt-2">
+          <div v-if="!saldosPreview.length" class="text-center text-medium-emphasis py-8">
+            <v-icon size="48" class="mb-2">mdi-email-off-outline</v-icon>
+            <div>Aún no hay sobres con movimientos.</div>
+          </div>
+          <v-list v-else class="bg-transparent py-0">
+            <template v-for="(s, i) in saldosPreview" :key="s.nombre">
+              <v-list-item class="px-2">
+                <template v-slot:prepend>
+                  <v-avatar :color="s.saldo < 0 ? 'error' : 'info'" variant="tonal" size="40"><v-icon>mdi-email-outline</v-icon></v-avatar>
+                </template>
+                <v-list-item-title class="font-weight-bold">{{ s.nombre }}</v-list-item-title>
+                <v-list-item-subtitle class="mt-1">
+                  <v-chip size="x-small" :color="getTypeColor(s.ultimoTipo)" variant="tonal" class="font-weight-bold mr-1">{{ s.ultimoTipo }}</v-chip>
+                  <span class="text-medium-emphasis">{{ formatDate(s.ultimaFecha) }}</span>
+                </v-list-item-subtitle>
+                <template v-slot:append>
+                  <div class="text-h6 font-weight-bold" :class="s.saldo < 0 ? 'text-error' : 'text-primary'">{{ formatCurrency(s.saldo) }}</div>
+                </template>
+              </v-list-item>
+              <v-divider v-if="i < saldosPreview.length - 1" class="border-b-dark"></v-divider>
+            </template>
+          </v-list>
+          <template v-if="saldosPreview.length">
+            <v-divider class="border-b-dark my-2"></v-divider>
+            <div class="d-flex justify-space-between align-center px-2 py-1">
+              <span class="text-medium-emphasis font-weight-medium">Saldo global</span>
+              <span class="text-h6 font-weight-bold text-primary">{{ formatCurrency(globalBalance) }}</span>
+            </div>
+          </template>
+        </v-card-text>
+      </v-card>
+    </v-dialog>
+
     <!-- MODAL: selección de factura de proveedor SAP (Trade/Log, pagadas) -->
     <v-dialog v-model="facturaModal.show" max-width="1040" scrollable>
       <v-card class="card-dark-blue">
@@ -532,6 +574,18 @@ const sobreOrigenSel = computed(() =>
     (dialog.value.type === 'egreso' || dialog.value.type === 'traspaso') ? editedItem.value.sobreOrigen : null);
 const saldoOrigen = computed(() => sobreOrigenSel.value ? saldoSobre(sobreOrigenSel.value) : 0);
 const excedeSaldo = computed(() => !!sobreOrigenSel.value && montoNum.value > saldoOrigen.value);
+
+// --- Modal de desglose de saldos (solo sobres con movimientos) ---
+const saldosDialog = ref(false);
+const openSaldos = () => { saldosDialog.value = true; };
+const saldosPreview = computed(() => {
+    return sobresFull.value.map(s => {
+        const movs = transactions.value.filter(t => t.sobre_origen === s.nombre || t.sobre_destino === s.nombre);
+        if (!movs.length) return null;
+        const last = movs.reduce((a, b) => (new Date(a.fecha) >= new Date(b.fecha) ? a : b));
+        return { nombre: s.nombre, saldo: Number(s.saldo), ultimaFecha: last.fecha, ultimoTipo: last.tipo };
+    }).filter(Boolean).sort((a, b) => Number(b.saldo) - Number(a.saldo));
+});
 
 // Subcategorías de la categoría elegida
 const subcatsForSelected = computed(() => {
@@ -847,4 +901,41 @@ onMounted(() => {
   font-size: 12px; padding-inline: 8px !important;
 }
 .hist-table :deep(th .d-flex) { overflow: visible; }
+
+/* ============ Modales de captura: efecto glass adaptado al tema ============ */
+.capture-glass {
+  background:
+    linear-gradient(160deg, rgba(var(--v-theme-primary), 0.07), rgba(var(--v-theme-primary), 0) 55%),
+    rgb(var(--v-theme-surface)) !important;
+  color: rgb(var(--v-theme-on-surface)) !important;
+  border: 1px solid rgba(var(--v-theme-on-surface), 0.08) !important;
+  box-shadow: 0 20px 55px rgba(0, 0, 0, 0.30), 0 3px 10px rgba(0, 0, 0, 0.14) !important;
+  backdrop-filter: blur(10px);
+}
+
+/* Campos con gradiente + sombra glass sutil */
+.capture-glass :deep(.v-field) {
+  background: linear-gradient(145deg, rgba(var(--v-theme-on-surface), 0.05), rgba(var(--v-theme-on-surface), 0.015)) !important;
+  border-radius: 10px !important;
+  box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.10), 0 1px 1px rgba(255, 255, 255, 0.04);
+  backdrop-filter: blur(4px);
+  transition: box-shadow 0.2s ease;
+}
+.capture-glass :deep(.v-field--focused) {
+  box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.10), 0 0 0 2px rgba(var(--v-theme-primary), 0.28);
+}
+/* Texto de los campos siempre legible según el tema */
+.capture-glass :deep(.v-field__input),
+.capture-glass :deep(input),
+.capture-glass :deep(textarea),
+.capture-glass :deep(.v-select__selection-text) {
+  color: rgb(var(--v-theme-on-surface)) !important;
+}
+.capture-glass :deep(.v-label) { color: rgba(var(--v-theme-on-surface), 0.70) !important; }
+
+/* Botones de acción: gloss + sombra, conservando su color de tipo */
+.capture-glass :deep(.v-card-actions .v-btn.v-btn--variant-flat) {
+  background-image: linear-gradient(160deg, rgba(255, 255, 255, 0.22), rgba(255, 255, 255, 0) 60%);
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.22) !important;
+}
 </style>
