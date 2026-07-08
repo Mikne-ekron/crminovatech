@@ -102,3 +102,21 @@
 .border-b-dark {
     border-bottom: 1px solid var(--border-color) !important;
 }
+
+/* =========================================================
+   iOS: evitar el zoom automático al enfocar un campo.
+   Safari hace zoom si la fuente del control es < 16px. En
+   pantallas chicas forzamos 16px en inputs/selects/textareas.
+   (No afecta desktop.)
+   ========================================================= */
+@media (max-width: 820px) {
+    .v-field input,
+    .v-field textarea,
+    .v-field .v-field__input,
+    .v-text-field input,
+    input,
+    select,
+    textarea {
+        font-size: 16px !important;
+    }
+}
