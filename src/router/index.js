@@ -39,6 +39,11 @@ const routes = [
         name: 'Chat',
         component: () => import('@/views/Chat.vue')
       },
+      {
+        path: 'notes',
+        name: 'Notes',
+        component: () => import('@/views/Notes.vue')
+      },
 
       // --- TESORERÍA ---
 

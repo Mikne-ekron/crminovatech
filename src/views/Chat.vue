@@ -273,6 +273,13 @@ onUnmounted(() => { if (timer) clearInterval(timer); });
    En la lista (sin conversación) se descuenta la barra flotante. */
 .chat-page.is-mobile { height: calc(100dvh - 60px); }
 .chat-page.is-mobile.list-mode { height: calc(100dvh - 60px - 92px - env(safe-area-inset-bottom)); }
+
+/* App instalada (standalone): la barra superior crece con el notch
+   (60px + safe-area-inset-top), así que hay que descontarlo también. */
+@media all and (display-mode: standalone) {
+  .chat-page.is-mobile { height: calc(100dvh - 60px - env(safe-area-inset-top)); }
+  .chat-page.is-mobile.list-mode { height: calc(100dvh - 60px - env(safe-area-inset-top) - 92px - env(safe-area-inset-bottom)); }
+}
 .chat-list {
   width: 340px;
   border-right: 1px solid rgba(var(--v-theme-on-surface), 0.08);

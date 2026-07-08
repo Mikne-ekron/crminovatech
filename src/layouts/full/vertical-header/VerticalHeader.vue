@@ -51,7 +51,7 @@ const getCart = computed(() => {
     <v-app-bar elevation="5" :priority="priority" height="60" color="primary" class="main-head" id="top">
         <!-- ============ MÓVIL: notas · logo · campana ============ -->
         <template v-if="smAndDown">
-            <v-btn icon variant="text" color="white" size="small" class="ms-1">
+            <v-btn icon variant="text" color="white" size="small" class="ms-1" to="/app/notes">
                 <Icon icon="solar:notes-bold-duotone" height="24" />
             </v-btn>
             <v-spacer />
@@ -133,6 +133,13 @@ const getCart = computed(() => {
             <LogoIcon />
         </div>
         <CompanySwitcher class="hidden-sm-and-down" />
+        <v-btn
+            to="/app/notes"
+            icon variant="text" color="primary" size="small"
+            class="hidden-sm-and-down custom-hover-primary"
+        >
+            <Icon icon="solar:notes-bold-duotone" height="22" />
+        </v-btn>
         <v-btn
             to="/app/chat"
             icon variant="text" color="primary" size="small"
