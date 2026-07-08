@@ -2,7 +2,7 @@
   <v-container class="py-6 py-md-10" style="max-width:1080px">
     <!-- Saludo -->
     <div class="mb-6">
-      <h1 class="text-h5 text-md-h4 font-weight-bold">{{ saludo }}, {{ nombre }} 👋</h1>
+      <h1 class="text-h5 text-md-h4 font-weight-bold">{{ saludo }}, {{ nombre }}</h1>
       <p class="text-h6 text-medium-emphasis mt-1 font-weight-regular">¿Qué vamos a hacer hoy?</p>
     </div>
 
@@ -48,23 +48,29 @@
       </v-card>
     </v-expand-transition>
 
-    <!-- Accesos por menú -->
+    <!-- Accesos por módulo -->
     <h2 class="text-subtitle-1 font-weight-bold mt-10 mb-3 text-medium-emphasis text-uppercase" style="letter-spacing:.5px">Accesos rápidos</h2>
-    <v-row dense>
-      <v-col v-for="acc in accesos" :key="acc.path" cols="6" sm="4" md="3">
-        <v-card @click="go(acc.path)" elevation="0" class="rounded-lg acceso-card h-100">
-          <v-card-text class="d-flex align-center ga-3 py-4">
-            <v-avatar color="primary" variant="tonal" size="42">
-              <Icon :icon="`solar:${acc.icon}`" width="22" height="22" />
-            </v-avatar>
-            <div class="font-weight-medium text-body-1">{{ acc.title }}</div>
-          </v-card-text>
-        </v-card>
-      </v-col>
-      <v-col v-if="!accesos.length" cols="12">
-        <div class="text-center text-medium-emphasis py-6">No tienes accesos asignados.</div>
-      </v-col>
-    </v-row>
+
+    <div v-for="g in gruposAccesos" :key="g.module" class="mb-5">
+      <div class="d-flex align-center mb-2">
+        <v-avatar color="primary" variant="tonal" size="26" class="mr-2"><Icon :icon="`solar:${g.icon}`" width="15" height="15" /></v-avatar>
+        <span class="text-subtitle-2 font-weight-bold">{{ g.module }}</span>
+      </div>
+      <v-row dense>
+        <v-col v-for="acc in g.items" :key="acc.path" cols="6" sm="4" md="3">
+          <v-card @click="go(acc.path)" elevation="0" class="rounded-lg acceso-card h-100">
+            <v-card-text class="d-flex align-center ga-3 py-4">
+              <v-avatar color="primary" variant="tonal" size="42">
+                <Icon :icon="`solar:${acc.icon}`" width="22" height="22" />
+              </v-avatar>
+              <div class="font-weight-medium text-body-1">{{ acc.title }}</div>
+            </v-card-text>
+          </v-card>
+        </v-col>
+      </v-row>
+    </div>
+
+    <div v-if="!gruposAccesos.length" class="text-center text-medium-emphasis py-6">No tienes accesos asignados.</div>
   </v-container>
 </template>
 
@@ -115,23 +121,26 @@ const clearSearch = () => { query.value = ''; groups.value = []; };
 
 const go = (path) => { if (path) router.push(path); };
 
-// --- Accesos (menú del usuario, ya filtrado por permisos) ---
-const accesos = ref([]);
+// --- Accesos agrupados por módulo (menú del usuario, filtrado por permisos) ---
+const gruposAccesos = ref([]);
 const fetchMenu = async () => {
   try {
     const r = await axios.get('/admin/my-menu');
-    const flat = [];
+    const grupos = [];
+    const generales = [];
     (r.data || []).forEach(item => {
       const icon = item.Icon || 'widget-outline';
       if (item.children && item.children.length) {
-        item.children.forEach(ch => { if (ch.Path) flat.push({ title: ch.Title, path: ch.Path, icon }); });
-        if (item.Path) flat.push({ title: item.Title, path: item.Path, icon });
+        const items = item.children.filter(ch => ch.Path).map(ch => ({ title: ch.Title, path: ch.Path, icon }));
+        if (item.Path) items.unshift({ title: item.Title, path: item.Path, icon });
+        if (items.length) grupos.push({ module: item.Title, icon, items });
       } else if (item.Path) {
-        flat.push({ title: item.Title, path: item.Path, icon });
+        generales.push({ title: item.Title, path: item.Path, icon });
       }
     });
-    accesos.value = flat;
-  } catch (e) { accesos.value = []; }
+    if (generales.length) grupos.push({ module: 'General', icon: 'widget-outline', items: generales });
+    gruposAccesos.value = grupos;
+  } catch (e) { gruposAccesos.value = []; }
 };
 
 onMounted(() => {

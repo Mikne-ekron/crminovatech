@@ -1,5 +1,6 @@
 <script setup>
 import { ref, watch, computed } from 'vue';
+import { useDisplay } from 'vuetify';
 import { useCustomizerStore } from '@/stores/customizer';
 import { Icon } from '@iconify/vue';
 // import LanguageDD from './LanguageDD.vue';
@@ -16,6 +17,7 @@ import CompanySwitcher from './CompanySwitcher.vue';
 // import RightMobileSidebar from './RightMobileSidebar.vue';
 
 const customizer = useCustomizerStore();
+const { smAndDown } = useDisplay();
 const showSearch = ref(false);
 const priority = ref(customizer.setHorizontalLayout ? 0 : 0);
 function searchbox() {
@@ -62,7 +64,7 @@ const getCart = computed(() => {
         >
             <Icon icon="solar:list-bold" height="22" />
         </v-btn>
-        <v-btn class="hidden-lg-and-up" icon variant="text" @click.stop="customizer.SET_SIDEBAR_DRAWER" size="small">
+        <v-btn v-if="!smAndDown" class="hidden-lg-and-up" icon variant="text" @click.stop="customizer.SET_SIDEBAR_DRAWER" size="small">
             <Icon icon="solar:list-bold" height="22" />
         </v-btn>
 

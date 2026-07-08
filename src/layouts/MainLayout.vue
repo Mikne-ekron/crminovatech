@@ -3,10 +3,11 @@
     <!-- Header Profesional MaterialPro -->
     <VerticalHeaderVue />
 
-    <v-navigation-drawer 
-      v-model="drawer" 
-      location="left" 
-      :rail="customizer.mini_sidebar" 
+    <v-navigation-drawer
+      v-if="!smAndDown"
+      v-model="drawer"
+      location="left"
+      :rail="customizer.mini_sidebar"
       rail-width="75"
       expand-on-hover
       width="256"
@@ -72,6 +73,44 @@
         </router-view>
       </v-container>
     </v-main>
+
+    <!-- Navegación inferior estilo app (solo móvil) -->
+    <v-bottom-navigation v-if="smAndDown" grow height="68" color="primary" elevation="10" class="mobile-bnav">
+      <v-btn @click="goSearch">
+        <v-icon>mdi-magnify</v-icon>
+        <span class="text-caption">Buscar</span>
+      </v-btn>
+      <v-btn class="bnav-home" @click="goHome">
+        <v-icon size="26">mdi-home</v-icon>
+        <span class="text-caption">Inicio</span>
+      </v-btn>
+      <v-btn @click="accountSheet = true">
+        <v-icon>mdi-account-circle-outline</v-icon>
+        <span class="text-caption">Cuenta</span>
+      </v-btn>
+    </v-bottom-navigation>
+
+    <!-- Hoja de cuenta (móvil) -->
+    <v-bottom-sheet v-model="accountSheet">
+      <v-card class="rounded-t-xl">
+        <v-list class="py-2">
+          <template v-if="authStore.canSwitchCompany">
+            <v-list-subheader class="font-weight-bold">Empresa</v-list-subheader>
+            <v-list-item v-for="co in companyStore.companies" :key="co.id"
+              :active="companyStore.currentCompany === co.id" @click="switchCompany(co.id)">
+              <template v-slot:prepend><v-icon>mdi-domain</v-icon></template>
+              <v-list-item-title>{{ co.label }}</v-list-item-title>
+              <template v-slot:append v-if="companyStore.currentCompany === co.id"><v-icon color="primary">mdi-check</v-icon></template>
+            </v-list-item>
+            <v-divider class="my-1" />
+          </template>
+          <v-list-item base-color="error" @click="logout">
+            <template v-slot:prepend><v-icon>mdi-logout</v-icon></template>
+            <v-list-item-title class="font-weight-medium">Cerrar sesión</v-list-item-title>
+          </v-list-item>
+        </v-list>
+      </v-card>
+    </v-bottom-sheet>
   </v-app>
 </template>
 
@@ -87,7 +126,12 @@ import axios from '@/utils/axios';
 import { useTheme, useDisplay } from 'vuetify';
 
 const authStore = useAuthStore();
-const { mobile } = useDisplay();
+const { smAndDown } = useDisplay();
+const accountSheet = ref(false);
+const goHome = () => router.push('/app/dashboard');
+const goSearch = () => router.push('/app/dashboard');
+const switchCompany = (id) => { accountSheet.value = false; companyStore.setCompany(id); };
+const logout = () => { accountSheet.value = false; authStore.logout(); router.push('/login'); };
 const router = useRouter();
 const customizer = useCustomizerStore();
 const companyStore = useCompanyStore();
@@ -158,7 +202,7 @@ const fetchMenu = async () => {
 onMounted(async () => {
     // Iniciar siempre con el menú colapsado: rail en desktop, cerrado en móvil.
     customizer.mini_sidebar = true;
-    if (mobile.value) customizer.Sidebar_drawer = false;
+    if (smAndDown.value) customizer.Sidebar_drawer = false;
 
     if (!authStore.isAuthenticated) {
         router.push('/login');
@@ -273,5 +317,15 @@ onMounted(async () => {
 
 .v-main {
   transition: padding-left 0.2s ease;
+}
+
+/* Navegación inferior (móvil) */
+.mobile-bnav {
+  padding-bottom: env(safe-area-inset-bottom);
+  border-top: 1px solid rgba(var(--v-theme-on-surface), 0.08);
+}
+.mobile-bnav :deep(.bnav-home) {
+  color: rgb(var(--v-theme-primary)) !important;
+  font-weight: 700;
 }
 </style>
