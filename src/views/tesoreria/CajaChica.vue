@@ -152,8 +152,9 @@
         <v-icon icon="mdi-history" class="mr-2 text-primary"></v-icon>
         <span class="font-weight-bold">Historial de Operaciones</span>
         <v-spacer></v-spacer>
-        <v-text-field v-model="histSearch" density="compact" variant="solo-filled" flat hide-details
-          placeholder="Buscar en la tabla…" prepend-inner-icon="mdi-magnify" style="max-width:240px" class="flex-grow-0"></v-text-field>
+        <v-text-field v-model="histSearch" density="comfortable" variant="outlined" hide-details
+          placeholder="Buscar en la tabla…" prepend-inner-icon="mdi-magnify"
+          class="flex-grow-1" style="min-width:280px; max-width:460px"></v-text-field>
         <v-chip color="primary" variant="flat">Saldo: {{ formatCurrency(globalBalance) }}</v-chip>
       </v-card-title>
 
