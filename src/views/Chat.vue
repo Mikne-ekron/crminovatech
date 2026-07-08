@@ -1,5 +1,5 @@
 <template>
-  <div class="chat-page" :class="{ 'is-mobile': smAndDown, 'list-mode': smAndDown && !chat.activeId }">
+  <div ref="pageEl" class="chat-page" :class="{ 'is-mobile': smAndDown, 'list-mode': smAndDown && !chat.activeId }">
     <!-- ===== Lista de conversaciones ===== -->
     <div v-show="showList" class="chat-list">
       <div class="d-flex align-center justify-space-between px-4 py-3 chat-list-head">
@@ -151,6 +151,7 @@ const draft = ref('');
 const newDialog = ref(false);
 const userSearch = ref('');
 const scrollBox = ref(null);
+const pageEl = ref(null);
 const fileInput = ref(null);
 const imgViewer = ref(false);
 const viewerSrc = ref('');
@@ -244,23 +245,54 @@ const viewImage = (src) => { viewerSrc.value = src; imgViewer.value = true; };
 
 const loadFromRoute = async () => {
   const id = route.params.id;
-  if (id) { await chat.openConversation(id); scrollBottom(); }
+  if (id) { await chat.openConversation(id); applyChatHeight(); scrollBottom(); }
   else chat.clearActive();
+  applyChatHeight();
+};
+
+// --- Ajuste de alto con el teclado (solo se mueve el chat, no los encabezados) ---
+// Usamos visualViewport (que sí encoge al abrir el teclado) para fijar el alto
+// del chat; así el documento no hace scroll y la barra superior / encabezado de
+// la conversación quedan fijos.
+const appBarH = () => (document.getElementById('top')?.offsetHeight || 60);
+const applyChatHeight = () => {
+  const el = pageEl.value;
+  if (!el) return;
+  if (smAndDown.value && chat.activeId) {
+    const vh = window.visualViewport ? window.visualViewport.height : window.innerHeight;
+    el.style.height = Math.max(220, vh - appBarH()) + 'px';
+    document.body.classList.add('chat-no-scroll');
+    scrollBottom();
+  } else {
+    el.style.height = '';
+    document.body.classList.remove('chat-no-scroll');
+  }
 };
 
 watch(() => route.params.id, loadFromRoute);
 watch(() => chat.messages.length, scrollBottom);
+watch(() => chat.activeId, applyChatHeight);
+watch(smAndDown, applyChatHeight);
 
 onMounted(async () => {
   await chat.fetchConversations();
   await loadFromRoute();
+  const vv = window.visualViewport;
+  if (vv) { vv.addEventListener('resize', applyChatHeight); vv.addEventListener('scroll', applyChatHeight); }
+  window.addEventListener('resize', applyChatHeight);
   timer = setInterval(() => {
     chat.fetchUnread();
     if (chat.activeId) chat.refreshActive();
     else chat.fetchConversations();
   }, 4000);
 });
-onUnmounted(() => { if (timer) clearInterval(timer); });
+onUnmounted(() => {
+  if (timer) clearInterval(timer);
+  const vv = window.visualViewport;
+  if (vv) { vv.removeEventListener('resize', applyChatHeight); vv.removeEventListener('scroll', applyChatHeight); }
+  window.removeEventListener('resize', applyChatHeight);
+  document.body.classList.remove('chat-no-scroll');
+});
 </script>
 
 <style scoped>
@@ -324,5 +356,15 @@ onUnmounted(() => { if (timer) clearInterval(timer); });
   padding: 10px 12px calc(10px + env(safe-area-inset-bottom));
   border-top: 1px solid rgba(var(--v-theme-on-surface), 0.08);
   background: rgb(var(--v-theme-surface));
+}
+</style>
+
+<style>
+/* Mientras hay una conversación abierta, el documento no hace scroll: así la
+   barra superior y el encabezado de la conversación quedan fijos aunque se
+   abra el teclado (solo se ajusta el área de mensajes). */
+body.chat-no-scroll {
+  overflow: hidden !important;
+  overscroll-behavior: none;
 }
 </style>
