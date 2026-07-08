@@ -74,21 +74,21 @@
       </v-container>
     </v-main>
 
-    <!-- Navegación inferior estilo app (solo móvil) -->
-    <v-bottom-navigation v-if="smAndDown" grow height="68" color="primary" elevation="10" class="mobile-bnav">
-      <v-btn @click="goSearch">
-        <v-icon>mdi-magnify</v-icon>
-        <span class="text-caption">Buscar</span>
-      </v-btn>
-      <v-btn class="bnav-home" @click="goHome">
-        <v-icon size="26">mdi-home</v-icon>
-        <span class="text-caption">Inicio</span>
-      </v-btn>
-      <v-btn @click="accountSheet = true">
-        <v-icon>mdi-account-circle-outline</v-icon>
-        <span class="text-caption">Cuenta</span>
-      </v-btn>
-    </v-bottom-navigation>
+    <!-- Barra flotante estilo app (solo móvil): fija, centrada, glass -->
+    <nav v-if="smAndDown" class="floating-nav">
+      <button type="button" class="fnav-item" @click="goSearch">
+        <v-icon size="22">mdi-magnify</v-icon>
+        <span>Buscar</span>
+      </button>
+      <button type="button" class="fnav-item fnav-home" @click="goHome">
+        <v-icon size="24">mdi-home</v-icon>
+        <span>Inicio</span>
+      </button>
+      <button type="button" class="fnav-item" @click="accountSheet = true">
+        <v-icon size="22">mdi-account-circle-outline</v-icon>
+        <span>Cuenta</span>
+      </button>
+    </nav>
 
     <!-- Hoja de cuenta (móvil) -->
     <v-bottom-sheet v-model="accountSheet">
@@ -319,13 +319,49 @@ onMounted(async () => {
   transition: padding-left 0.2s ease;
 }
 
-/* Navegación inferior (móvil) */
-.mobile-bnav {
-  padding-bottom: env(safe-area-inset-bottom);
-  border-top: 1px solid rgba(var(--v-theme-on-surface), 0.08);
+/* Barra flotante estilo app (móvil): fija, centrada, glass */
+.floating-nav {
+  position: fixed;
+  left: 50%;
+  transform: translateX(-50%);
+  bottom: calc(14px + env(safe-area-inset-bottom));
+  z-index: 2000;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 7px 9px;
+  border-radius: 999px;
+  background: rgba(var(--v-theme-surface), 0.68);
+  backdrop-filter: blur(20px) saturate(180%);
+  -webkit-backdrop-filter: blur(20px) saturate(180%);
+  border: 1px solid rgba(var(--v-theme-on-surface), 0.10);
+  box-shadow: 0 10px 34px rgba(0, 0, 0, 0.24), 0 2px 8px rgba(0, 0, 0, 0.12);
 }
-.mobile-bnav :deep(.bnav-home) {
-  color: rgb(var(--v-theme-primary)) !important;
+.fnav-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  min-width: 68px;
+  padding: 6px 12px;
+  border: none;
+  background: transparent;
+  border-radius: 999px;
+  cursor: pointer;
+  color: rgba(var(--v-theme-on-surface), 0.68);
+  font-size: 11px;
+  line-height: 1;
+  transition: color 0.15s ease, background 0.15s ease;
+}
+.fnav-item:active { background: rgba(var(--v-theme-on-surface), 0.06); }
+.fnav-home {
+  color: rgb(var(--v-theme-primary));
   font-weight: 700;
+}
+
+/* Espacio para que el contenido no quede tapado por la barra flotante */
+@media (max-width: 960px) {
+  .v-main { padding-bottom: calc(92px + env(safe-area-inset-bottom)) !important; }
 }
 </style>
