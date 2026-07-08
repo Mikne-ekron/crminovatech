@@ -4,6 +4,7 @@ import { useDisplay } from 'vuetify';
 import { useCustomizerStore } from '@/stores/customizer';
 import { useCompanyStore } from '@/stores/company';
 import { useNotificationsStore } from '@/stores/notifications';
+import { useChatStore } from '@/stores/chat';
 import { useAuthStore } from '@/stores/auth';
 import { Icon } from '@iconify/vue';
 // import LanguageDD from './LanguageDD.vue';
@@ -22,6 +23,7 @@ import CompanySwitcher from './CompanySwitcher.vue';
 const customizer = useCustomizerStore();
 const companyStore = useCompanyStore();
 const notifStore = useNotificationsStore();
+const chatStore = useChatStore();
 const authStore = useAuthStore();
 const isAdmin = computed(() => authStore.user?.role === 'ADMIN');
 const companyLogo = computed(() => companyStore.company?.logoLight || null);
@@ -131,6 +133,15 @@ const getCart = computed(() => {
             <LogoIcon />
         </div>
         <CompanySwitcher class="hidden-sm-and-down" />
+        <v-btn
+            to="/app/chat"
+            icon variant="text" color="primary" size="small"
+            class="hidden-sm-and-down custom-hover-primary"
+        >
+            <v-badge :content="chatStore.unread" :model-value="chatStore.unread > 0" color="error" offset-x="-2" offset-y="-2">
+                <Icon icon="solar:plain-2-bold-duotone" height="22" />
+            </v-badge>
+        </v-btn>
         <v-btn
             v-if="isAdmin"
             icon variant="text" color="primary" size="small"

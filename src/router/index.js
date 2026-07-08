@@ -34,6 +34,11 @@ const routes = [
         name: 'Perfil',
         component: () => import('@/views/Profile.vue')
       },
+      {
+        path: 'chat/:id?',
+        name: 'Chat',
+        component: () => import('@/views/Chat.vue')
+      },
 
       // --- TESORERÍA ---
 

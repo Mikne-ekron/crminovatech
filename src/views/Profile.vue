@@ -62,8 +62,8 @@
       </v-card-text>
     </v-card>
 
-    <!-- Notificaciones (solo admin recibe) -->
-    <v-card v-if="user.role === 'ADMIN'" elevation="0" class="rounded-xl mb-4" border>
+    <!-- Notificaciones push -->
+    <v-card elevation="0" class="rounded-xl mb-4" border>
       <v-card-title class="text-subtitle-1 font-weight-bold pt-4">Notificaciones</v-card-title>
       <v-card-text>
         <div class="d-flex align-center justify-space-between flex-wrap ga-3">
@@ -199,8 +199,8 @@ const pushHint = computed(() => {
   if (!pushSupported()) return 'Este dispositivo no soporta notificaciones push.';
   if (pushMustInstall.value) return 'Instala la app en tu iPhone (Compartir → Agregar a inicio) para recibir avisos push.';
   if (pushPermission.value === 'denied') return 'Bloqueadas. Actívalas en los ajustes del navegador para este sitio.';
-  if (pushPermission.value === 'granted') return 'Recibirás cada movimiento de tesorería al instante.';
-  return 'Actívalas para enterarte de cada movimiento de tesorería al instante.';
+  if (pushPermission.value === 'granted') return 'Recibirás avisos y mensajes al instante.';
+  return 'Actívalas para recibir avisos y mensajes al instante.';
 });
 const activarPush = async () => {
   pushBusy.value = true;

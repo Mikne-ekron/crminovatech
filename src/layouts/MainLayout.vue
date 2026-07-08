@@ -80,6 +80,12 @@
         <v-icon size="22">mdi-magnify</v-icon>
         <span>Buscar</span>
       </button>
+      <button type="button" class="fnav-item" @click="goChat">
+        <v-badge :content="chatStore.unread" :model-value="chatStore.unread > 0" color="error" offset-x="-2" offset-y="-2">
+          <v-icon size="22">mdi-send-outline</v-icon>
+        </v-badge>
+        <span>Mensajes</span>
+      </button>
       <button type="button" class="fnav-item fnav-home" @click="goHome">
         <v-icon size="24">mdi-home</v-icon>
         <span>Inicio</span>
@@ -127,6 +133,7 @@ import { useRouter } from 'vue-router';
 import { useCustomizerStore } from '@/stores/customizer';
 import { useCompanyStore } from '@/stores/company';
 import { useNotificationsStore } from '@/stores/notifications';
+import { useChatStore } from '@/stores/chat';
 import { ensureSubscribed } from '@/utils/push';
 import VerticalHeaderVue from './full/vertical-header/VerticalHeader.vue';
 import NotificationsDrawer from '@/components/shared/NotificationsDrawer.vue';
@@ -151,18 +158,28 @@ const router = useRouter();
 const customizer = useCustomizerStore();
 const companyStore = useCompanyStore();
 const notifStore = useNotificationsStore();
+const chatStore = useChatStore();
 const theme = useTheme();
 
-// Sondeo de notificaciones + resuscripción (solo para ADMIN, que son quienes reciben).
+// Sondeo de notificaciones (admin) + chat (todos) + resuscripción de push (todos).
 const isAdmin = computed(() => authStore.user?.role === 'ADMIN');
 let notifTimer = null;
-const onVisible = () => { if (document.visibilityState === 'visible' && isAdmin.value) notifStore.fetch(); };
+const onVisible = () => {
+  if (document.visibilityState !== 'visible') return;
+  if (isAdmin.value) notifStore.fetch();
+  chatStore.fetchUnread();
+};
+const goChat = () => router.push('/app/chat');
 const startNotifications = () => {
-  if (!isAdmin.value) return;
-  notifStore.fetch();
-  ensureSubscribed(); // reasegura el push si ya hay permiso concedido
+  ensureSubscribed(); // reasegura el push si ya hay permiso concedido (para avisos y mensajes)
+  chatStore.fetchUnread();
+  if (isAdmin.value) notifStore.fetch();
   if (notifTimer) clearInterval(notifTimer);
-  notifTimer = setInterval(() => { if (document.visibilityState === 'visible') notifStore.fetch(); }, 45000);
+  notifTimer = setInterval(() => {
+    if (document.visibilityState !== 'visible') return;
+    chatStore.fetchUnread();
+    if (isAdmin.value) notifStore.fetch();
+  }, 45000);
   document.addEventListener('visibilitychange', onVisible);
 };
 
@@ -364,9 +381,10 @@ onUnmounted(() => {
   z-index: 2000;
   display: flex;
   align-items: center;
-  gap: 6px;
-  padding: 7px 9px;
+  gap: 3px;
+  padding: 7px 7px;
   border-radius: 999px;
+  max-width: calc(100vw - 24px);
   background: rgba(var(--v-theme-surface), 0.68);
   backdrop-filter: blur(20px) saturate(180%);
   -webkit-backdrop-filter: blur(20px) saturate(180%);
@@ -379,15 +397,16 @@ onUnmounted(() => {
   align-items: center;
   justify-content: center;
   gap: 2px;
-  min-width: 68px;
-  padding: 6px 12px;
+  min-width: 56px;
+  padding: 6px 7px;
   border: none;
   background: transparent;
   border-radius: 999px;
   cursor: pointer;
   color: rgba(var(--v-theme-on-surface), 0.68);
-  font-size: 11px;
+  font-size: 10.5px;
   line-height: 1;
+  white-space: nowrap;
   transition: color 0.15s ease, background 0.15s ease;
 }
 .fnav-item:active { background: rgba(var(--v-theme-on-surface), 0.06); }
