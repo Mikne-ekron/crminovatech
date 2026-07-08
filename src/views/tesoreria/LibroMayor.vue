@@ -34,17 +34,55 @@
         <v-chip color="primary" variant="flat">{{ filtered.length }} operaciones</v-chip>
       </v-toolbar>
       <v-data-table
-        :headers="headers" :items="filtered" :search="search" :loading="loading" density="compact"
-        class="bg-transparent dark-table cursor-table" :sort-by="[{ key: 'fecha', order: 'desc' }]"
+        :headers="headers" :items="filtered" :loading="loading" density="compact"
+        class="bg-transparent dark-table cursor-table lm-table" :sort-by="[{ key: 'fecha', order: 'desc' }]"
         hover @click:row="onRow"
       >
+        <!-- Filtros por columna -->
+        <template v-slot:header.concepto="{ column }">
+          <div class="d-flex align-center"><span>{{ column.title }}</span>
+            <v-menu :close-on-content-click="false" location="bottom">
+              <template v-slot:activator="{ props }"><v-btn v-bind="props" :color="colFilters.concepto ? 'primary' : ''" icon size="x-small" variant="text" class="ml-1"><v-icon size="15">mdi-filter-variant</v-icon></v-btn></template>
+              <v-card min-width="230" class="pa-2"><v-text-field v-model="colFilters.concepto" label="Contiene…" density="compact" variant="outlined" hide-details clearable autofocus></v-text-field></v-card>
+            </v-menu>
+          </div>
+        </template>
+        <template v-slot:header.categoria="{ column }">
+          <div class="d-flex align-center"><span>{{ column.title }}</span>
+            <v-menu :close-on-content-click="false" location="bottom">
+              <template v-slot:activator="{ props }"><v-btn v-bind="props" :color="colFilters.categoria ? 'primary' : ''" icon size="x-small" variant="text" class="ml-1"><v-icon size="15">mdi-filter-variant</v-icon></v-btn></template>
+              <v-card min-width="230" class="pa-2"><v-text-field v-model="colFilters.categoria" label="Contiene…" density="compact" variant="outlined" hide-details clearable autofocus></v-text-field></v-card>
+            </v-menu>
+          </div>
+        </template>
+        <template v-slot:header.ruta="{ column }">
+          <div class="d-flex align-center"><span>{{ column.title }}</span>
+            <v-menu :close-on-content-click="false" location="bottom">
+              <template v-slot:activator="{ props }"><v-btn v-bind="props" :color="colFilters.ruta ? 'primary' : ''" icon size="x-small" variant="text" class="ml-1"><v-icon size="15">mdi-filter-variant</v-icon></v-btn></template>
+              <v-card min-width="230" class="pa-2"><v-text-field v-model="colFilters.ruta" label="Contiene…" density="compact" variant="outlined" hide-details clearable autofocus></v-text-field></v-card>
+            </v-menu>
+          </div>
+        </template>
+        <template v-slot:header.usuario="{ column }">
+          <div class="d-flex align-center"><span>{{ column.title }}</span>
+            <v-menu :close-on-content-click="false" location="bottom">
+              <template v-slot:activator="{ props }"><v-btn v-bind="props" :color="colFilters.usuario ? 'primary' : ''" icon size="x-small" variant="text" class="ml-1"><v-icon size="15">mdi-filter-variant</v-icon></v-btn></template>
+              <v-card min-width="230" class="pa-2"><v-text-field v-model="colFilters.usuario" label="Contiene…" density="compact" variant="outlined" hide-details clearable autofocus></v-text-field></v-card>
+            </v-menu>
+          </div>
+        </template>
+
+        <!-- Celdas -->
         <template v-slot:item.fecha="{ item }"><span class="text-light-muted">{{ fmtDate(item.fecha) }}</span></template>
         <template v-slot:item.tipo="{ item }"><v-chip size="x-small" :color="tipoColor(item.tipo)" variant="tonal" class="font-weight-bold">{{ item.tipo }}</v-chip></template>
+        <template v-slot:item.concepto="{ item }"><span :title="item.concepto">{{ item.concepto }}</span></template>
         <template v-slot:item.categoria="{ item }">
-          <span>{{ item.categoria && item.categoria !== '-' ? item.categoria : '—' }}</span>
-          <span v-if="item.subcategoria" class="text-light-muted"> / {{ item.subcategoria }}</span>
+          <span :title="(item.categoria && item.categoria !== '-' ? item.categoria : '') + (item.subcategoria ? ' / ' + item.subcategoria : '')">
+            {{ item.categoria && item.categoria !== '-' ? item.categoria : '—' }}<span v-if="item.subcategoria" class="text-light-muted"> / {{ item.subcategoria }}</span>
+          </span>
         </template>
-        <template v-slot:item.ruta="{ item }"><span class="text-light-muted">{{ ruta(item) }}</span></template>
+        <template v-slot:item.ruta="{ item }"><span class="text-light-muted" :title="ruta(item)">{{ ruta(item) }}</span></template>
+        <template v-slot:item.monto="{ item }"><span class="font-weight-bold">{{ money(item.monto) }}</span></template>
         <template v-slot:item.ingreso="{ item }"><span v-if="item.ingreso>0" class="text-success font-weight-bold">+{{ money(item.ingreso) }}</span><span v-else class="text-light-muted">-</span></template>
         <template v-slot:item.egreso="{ item }"><span v-if="item.egreso>0" class="text-error font-weight-bold">-{{ money(item.egreso) }}</span><span v-else class="text-light-muted">-</span></template>
         <template v-slot:item.acciones="{ item }">
@@ -202,18 +240,41 @@ const snack = ref({ show: false, text: '', color: 'success' });
 const notify = (text, color = 'success') => { snack.value = { show: true, text, color }; };
 
 const headers = [
-  { title: 'Fecha', key: 'fecha' },
+  { title: 'Fecha', key: 'fecha', width: '150px' },
+  { title: 'Tipo', key: 'tipo', width: '92px' },
   { title: 'Concepto', key: 'concepto' },
-  { title: 'Tipo', key: 'tipo' },
-  { title: 'Categoría', key: 'categoria' },
-  { title: 'Ruta / Sobre', key: 'ruta', sortable: false },
-  { title: 'Ingreso', key: 'ingreso', align: 'end' },
-  { title: 'Egreso', key: 'egreso', align: 'end' },
-  { title: 'Usuario', key: 'usuario' },
-  { title: '', key: 'acciones', align: 'end', sortable: false },
+  { title: 'Categoría', key: 'categoria', width: '150px' },
+  { title: 'Ruta / Sobre', key: 'ruta', sortable: false, width: '150px' },
+  { title: 'Monto Op.', key: 'monto', align: 'end', width: '110px' },
+  { title: 'Ingreso', key: 'ingreso', align: 'end', width: '104px' },
+  { title: 'Egreso', key: 'egreso', align: 'end', width: '104px' },
+  { title: 'Usuario', key: 'usuario', width: '100px' },
+  { title: '', key: 'acciones', align: 'end', sortable: false, width: '78px' },
 ];
 
-const filtered = computed(() => filtroTipo.value === 'Todos' ? items.value : items.value.filter(o => o.tipo === filtroTipo.value));
+// Filtros por columna (además del toggle de tipo y la búsqueda global)
+const colFilters = ref({ concepto: '', categoria: '', ruta: '', usuario: '' });
+
+// Filtrado completo (toggle de tipo + filtros de columna + búsqueda). El export
+// usa este mismo resultado, por lo que respeta todos los filtros aplicados.
+const filtered = computed(() => {
+  const q = search.value.trim().toLowerCase();
+  const f = colFilters.value;
+  const inc = (val, term) => String(val ?? '').toLowerCase().includes(String(term).toLowerCase());
+  return items.value.filter(o => {
+    if (filtroTipo.value !== 'Todos' && o.tipo !== filtroTipo.value) return false;
+    if (f.concepto && !inc(o.concepto, f.concepto)) return false;
+    if (f.categoria && !inc(o.categoria, f.categoria)) return false;
+    if (f.ruta && !inc(ruta(o), f.ruta)) return false;
+    if (f.usuario && !inc(o.usuario, f.usuario)) return false;
+    if (q) {
+      const hay = [o.concepto, o.tipo, o.categoria, o.subcategoria, ruta(o), o.usuario, fmtDate(o.fecha)]
+        .map(x => String(x ?? '').toLowerCase()).join(' ');
+      if (!hay.includes(q)) return false;
+    }
+    return true;
+  });
+});
 
 const load = async () => {
   loading.value = true;
@@ -359,6 +420,13 @@ onMounted(load);
 
 <style scoped>
 .cursor-table :deep(tbody tr) { cursor: pointer; }
+/* Libro Mayor: anchos fijos, sin scroll horizontal */
+.lm-table :deep(table) { table-layout: fixed; width: 100%; }
+.lm-table :deep(th), .lm-table :deep(td) {
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  font-size: 12px; padding-inline: 8px !important;
+}
+.lm-table :deep(th .d-flex) { overflow: visible; }
 .factura-table :deep(table) { table-layout: fixed; width: 100%; }
 .factura-table :deep(th), .factura-table :deep(td) {
   white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-size: 12px; padding-inline: 8px !important;
