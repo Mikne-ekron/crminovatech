@@ -3,8 +3,10 @@
     v-model="store.drawer"
     location="right"
     temporary
+    touchless
     width="380"
     class="notif-drawer"
+    @update:model-value="onToggle"
   >
     <!-- Encabezado -->
     <div class="d-flex align-center justify-space-between px-4 py-3 notif-head">
@@ -133,6 +135,10 @@ const open = (n) => {
   store.drawer = false;
   if (n.Url) router.push(n.Url);
 };
+
+// Registra cuándo se cerró (para que la campana funcione como toggle sin reabrir
+// por el cierre del scrim en el mismo toque).
+const onToggle = (val) => { if (!val) store.markClosed(); };
 </script>
 
 <style scoped>

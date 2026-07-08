@@ -57,7 +57,7 @@ const getCart = computed(() => {
             <v-spacer />
             <img v-if="companyLogo" :src="companyLogo" alt="logo" class="mobile-head-logo" :style="mobileLogoStyle" />
             <v-spacer />
-            <v-btn icon variant="text" color="white" size="small" class="me-1" @click="notifStore.openDrawer()">
+            <v-btn icon variant="text" color="white" size="small" class="me-1" @click="notifStore.toggleDrawer()">
                 <v-badge :content="notifStore.unread" :model-value="notifStore.unread > 0" color="error" offset-x="-1" offset-y="-1">
                     <Icon icon="solar:bell-bold-duotone" height="24" />
                 </v-badge>
@@ -153,7 +153,7 @@ const getCart = computed(() => {
             v-if="isAdmin"
             icon variant="text" color="primary" size="small"
             class="hidden-sm-and-down custom-hover-primary"
-            @click="notifStore.openDrawer()"
+            @click="notifStore.toggleDrawer()"
         >
             <v-badge :content="notifStore.unread" :model-value="notifStore.unread > 0" color="error" offset-x="-2" offset-y="-2">
                 <Icon icon="solar:bell-bold-duotone" height="22" />

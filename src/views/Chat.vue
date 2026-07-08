@@ -250,40 +250,38 @@ const loadFromRoute = async () => {
   applyChatHeight();
 };
 
-// --- Ajuste de alto con el teclado (solo se mueve el chat, no los encabezados) ---
-// En iOS, al abrir el teclado la VENTANA hace scroll y los elementos position:fixed
-// (la barra superior) se van con ella. Para evitarlo: bloqueamos el documento al
-// alto visible (visualViewport) y forzamos el scroll a 0 en cada cambio; así la
-// barra superior y el encabezado de la conversación quedan fijos y solo se ajusta
-// el área de mensajes.
+// --- Ajuste con el teclado (solo se ajusta el chat, no los encabezados) ---
+// En iOS, al abrir el teclado el "visual viewport" se desplaza (offsetTop) y los
+// elementos position:fixed (barra superior) se ven arrastrados. Solución robusta:
+// anclar el contenedor raíz de la app (#app) exactamente al área visible usando
+// visualViewport (alto + translateY(offsetTop)). Así la barra superior y el
+// encabezado de la conversación quedan fijos y solo el área de mensajes se ajusta.
 const appBarH = () => (document.getElementById('top')?.offsetHeight || 60);
-const lockViewport = () => {
-  const vh = window.visualViewport ? window.visualViewport.height : window.innerHeight;
-  const de = document.documentElement;
-  de.style.height = vh + 'px';
-  de.style.overflow = 'hidden';
-  document.body.style.height = vh + 'px';
-  document.body.style.overflow = 'hidden';
-  if (window.scrollY !== 0) window.scrollTo(0, 0);
-};
-const unlockViewport = () => {
-  const de = document.documentElement;
-  de.style.height = '';
-  de.style.overflow = '';
-  document.body.style.height = '';
-  document.body.style.overflow = '';
-};
+const rootEl = () => document.getElementById('app');
 const applyChatHeight = () => {
   const el = pageEl.value;
-  if (!el) return;
-  if (smAndDown.value && chat.activeId) {
-    lockViewport();
-    const vh = window.visualViewport ? window.visualViewport.height : window.innerHeight;
-    el.style.height = Math.max(220, vh - appBarH()) + 'px';
+  const root = rootEl();
+  const active = smAndDown.value && chat.activeId;
+  if (active && root) {
+    const vv = window.visualViewport;
+    const vh = vv ? vv.height : window.innerHeight;
+    const off = vv ? vv.offsetTop : 0;
+    Object.assign(root.style, {
+      position: 'fixed', top: '0', left: '0', right: '0', width: '100%',
+      height: vh + 'px', transform: `translateY(${off}px)`, overflow: 'hidden',
+    });
+    document.body.style.overflow = 'hidden';
+    if (el) el.style.height = Math.max(220, vh - appBarH()) + 'px';
     scrollBottom();
   } else {
-    unlockViewport();
-    el.style.height = '';
+    if (root) {
+      Object.assign(root.style, {
+        position: '', top: '', left: '', right: '', width: '',
+        height: '', transform: '', overflow: '',
+      });
+    }
+    document.body.style.overflow = '';
+    if (el) el.style.height = '';
   }
 };
 
@@ -304,12 +302,17 @@ onMounted(async () => {
     else chat.fetchConversations();
   }, 4000);
 });
+const resetRoot = () => {
+  const root = rootEl();
+  if (root) Object.assign(root.style, { position: '', top: '', left: '', right: '', width: '', height: '', transform: '', overflow: '' });
+  document.body.style.overflow = '';
+};
 onUnmounted(() => {
   if (timer) clearInterval(timer);
   const vv = window.visualViewport;
   if (vv) { vv.removeEventListener('resize', applyChatHeight); vv.removeEventListener('scroll', applyChatHeight); }
   window.removeEventListener('resize', applyChatHeight);
-  unlockViewport();
+  resetRoot();
 });
 </script>
 

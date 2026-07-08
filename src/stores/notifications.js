@@ -11,6 +11,7 @@ export const useNotificationsStore = defineStore('notifications', {
     unread: 0,
     drawer: false,
     loading: false,
+    _lastClosed: 0,
   }),
   actions: {
     async fetch() {
@@ -21,6 +22,14 @@ export const useNotificationsStore = defineStore('notifications', {
       } catch (e) {
         /* silencioso: sin conexión no rompemos la UI */
       }
+    },
+    markClosed() { this._lastClosed = Date.now(); },
+    // Alterna: si está abierto lo cierra; si se acaba de cerrar (scrim en el
+    // mismo toque de la campana) no reabre.
+    toggleDrawer() {
+      if (this.drawer) { this.drawer = false; return; }
+      if (Date.now() - this._lastClosed < 350) return;
+      this.openDrawer();
     },
     async openDrawer() {
       this.drawer = true;
