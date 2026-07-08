@@ -20,6 +20,11 @@ import CompanySwitcher from './CompanySwitcher.vue';
 const customizer = useCustomizerStore();
 const companyStore = useCompanyStore();
 const companyLogo = computed(() => companyStore.company?.logoLight || null);
+// El SVG de Inovatech trae padding interno: a igual altura se ve más chico,
+// por eso se agranda solo para Inovatech (mismo criterio que Logo.vue en desktop).
+const mobileLogoStyle = computed(() => ({
+    height: companyStore.company?.id === 'SBOINOVA' ? '48px' : '34px'
+}));
 const { smAndDown } = useDisplay();
 const showSearch = ref(false);
 const priority = ref(customizer.setHorizontalLayout ? 0 : 0);
@@ -43,7 +48,7 @@ const getCart = computed(() => {
                 <Icon icon="solar:notes-bold-duotone" height="24" />
             </v-btn>
             <v-spacer />
-            <img v-if="companyLogo" :src="companyLogo" alt="logo" class="mobile-head-logo" />
+            <img v-if="companyLogo" :src="companyLogo" alt="logo" class="mobile-head-logo" :style="mobileLogoStyle" />
             <v-spacer />
             <v-btn icon variant="text" color="white" size="small" class="me-1">
                 <Icon icon="solar:bell-bold-duotone" height="24" />
@@ -180,9 +185,9 @@ const getCart = computed(() => {
 
 <style scoped>
 .mobile-head-logo {
-    height: 30px;
     width: auto;
-    max-width: 150px;
+    max-width: 190px;
     object-fit: contain;
+    display: block;
 }
 </style>
