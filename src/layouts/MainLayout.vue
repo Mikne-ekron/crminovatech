@@ -84,11 +84,36 @@
         <v-icon size="24">mdi-home</v-icon>
         <span>Inicio</span>
       </button>
+      <button v-if="authStore.canSwitchCompany" type="button" class="fnav-item" @click="empresaSheet = true">
+        <v-icon size="22">mdi-domain</v-icon>
+        <span>Empresa</span>
+      </button>
       <button type="button" class="fnav-item" @click="goProfile">
         <v-icon size="22">mdi-account-circle-outline</v-icon>
         <span>Cuenta</span>
       </button>
     </nav>
+
+    <!-- Cambiar de empresa (solo si el usuario tiene el permiso) -->
+    <v-bottom-sheet v-model="empresaSheet">
+      <v-card class="rounded-t-xl">
+        <v-list class="py-2">
+          <v-list-subheader class="font-weight-bold text-uppercase">Cambiar de empresa</v-list-subheader>
+          <v-list-item
+            v-for="co in companyStore.companies" :key="co.id"
+            :active="companyStore.currentCompany === co.id"
+            color="primary"
+            @click="pickCompany(co.id)"
+          >
+            <template #prepend><v-icon>mdi-domain</v-icon></template>
+            <v-list-item-title class="font-weight-medium">{{ co.label }}</v-list-item-title>
+            <template #append>
+              <v-icon v-if="companyStore.currentCompany === co.id" color="primary">mdi-check-circle</v-icon>
+            </template>
+          </v-list-item>
+        </v-list>
+      </v-card>
+    </v-bottom-sheet>
   </v-app>
 </template>
 
@@ -108,6 +133,9 @@ const { smAndDown } = useDisplay();
 const goHome = () => router.push('/app/dashboard');
 const goSearch = () => router.push('/app/dashboard');
 const goProfile = () => router.push('/app/perfil');
+// Hoja para cambiar de empresa desde la barra inferior (móvil)
+const empresaSheet = ref(false);
+const pickCompany = (id) => { empresaSheet.value = false; companyStore.setCompany(id); };
 // Aplica la preferencia de tema (día/noche) del usuario
 const applyThemePref = () => {
   const pref = authStore.user?.themePref;

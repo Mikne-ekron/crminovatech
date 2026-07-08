@@ -2,6 +2,7 @@
 import { ref, watch, computed } from 'vue';
 import { useDisplay } from 'vuetify';
 import { useCustomizerStore } from '@/stores/customizer';
+import { useCompanyStore } from '@/stores/company';
 import { Icon } from '@iconify/vue';
 // import LanguageDD from './LanguageDD.vue';
 // import NotificationDD from './NotificationDD.vue';
@@ -17,6 +18,8 @@ import CompanySwitcher from './CompanySwitcher.vue';
 // import RightMobileSidebar from './RightMobileSidebar.vue';
 
 const customizer = useCustomizerStore();
+const companyStore = useCompanyStore();
+const companyLogo = computed(() => companyStore.company?.logoLight || null);
 const { smAndDown } = useDisplay();
 const showSearch = ref(false);
 const priority = ref(customizer.setHorizontalLayout ? 0 : 0);
@@ -34,6 +37,21 @@ const getCart = computed(() => {
 
 <template>
     <v-app-bar elevation="5" :priority="priority" height="60" color="primary" class="main-head" id="top">
+        <!-- ============ MÓVIL: notas · logo · campana ============ -->
+        <template v-if="smAndDown">
+            <v-btn icon variant="text" color="white" size="small" class="ms-1">
+                <Icon icon="solar:notes-bold-duotone" height="24" />
+            </v-btn>
+            <v-spacer />
+            <img v-if="companyLogo" :src="companyLogo" alt="logo" class="mobile-head-logo" />
+            <v-spacer />
+            <v-btn icon variant="text" color="white" size="small" class="me-1">
+                <Icon icon="solar:bell-bold-duotone" height="24" />
+            </v-btn>
+        </template>
+
+        <!-- ============ DESKTOP: barra completa ============ -->
+        <template v-else>
         <!---LOGO RTL/LTR--->
         <div class="hidden-sm-and-down">
             <v-locale-provider v-if="customizer.setRTLLayout" rtl>
@@ -156,6 +174,15 @@ const getCart = computed(() => {
                 </div>
             </v-sheet>
         </v-menu>
-        
+        </template>
     </v-app-bar>
 </template>
+
+<style scoped>
+.mobile-head-logo {
+    height: 30px;
+    width: auto;
+    max-width: 150px;
+    object-fit: contain;
+}
+</style>
