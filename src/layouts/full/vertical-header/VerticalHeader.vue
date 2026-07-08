@@ -3,6 +3,8 @@ import { ref, watch, computed } from 'vue';
 import { useDisplay } from 'vuetify';
 import { useCustomizerStore } from '@/stores/customizer';
 import { useCompanyStore } from '@/stores/company';
+import { useNotificationsStore } from '@/stores/notifications';
+import { useAuthStore } from '@/stores/auth';
 import { Icon } from '@iconify/vue';
 // import LanguageDD from './LanguageDD.vue';
 // import NotificationDD from './NotificationDD.vue';
@@ -19,6 +21,9 @@ import CompanySwitcher from './CompanySwitcher.vue';
 
 const customizer = useCustomizerStore();
 const companyStore = useCompanyStore();
+const notifStore = useNotificationsStore();
+const authStore = useAuthStore();
+const isAdmin = computed(() => authStore.user?.role === 'ADMIN');
 const companyLogo = computed(() => companyStore.company?.logoLight || null);
 // El SVG de Inovatech trae padding interno: a igual altura se ve más chico,
 // por eso se agranda solo para Inovatech (mismo criterio que Logo.vue en desktop).
@@ -50,8 +55,10 @@ const getCart = computed(() => {
             <v-spacer />
             <img v-if="companyLogo" :src="companyLogo" alt="logo" class="mobile-head-logo" :style="mobileLogoStyle" />
             <v-spacer />
-            <v-btn icon variant="text" color="white" size="small" class="me-1">
-                <Icon icon="solar:bell-bold-duotone" height="24" />
+            <v-btn icon variant="text" color="white" size="small" class="me-1" @click="notifStore.openDrawer()">
+                <v-badge :content="notifStore.unread" :model-value="notifStore.unread > 0" color="error" offset-x="-1" offset-y="-1">
+                    <Icon icon="solar:bell-bold-duotone" height="24" />
+                </v-badge>
             </v-btn>
         </template>
 
@@ -124,6 +131,16 @@ const getCart = computed(() => {
             <LogoIcon />
         </div>
         <CompanySwitcher class="hidden-sm-and-down" />
+        <v-btn
+            v-if="isAdmin"
+            icon variant="text" color="primary" size="small"
+            class="hidden-sm-and-down custom-hover-primary"
+            @click="notifStore.openDrawer()"
+        >
+            <v-badge :content="notifStore.unread" :model-value="notifStore.unread > 0" color="error" offset-x="-2" offset-y="-2">
+                <Icon icon="solar:bell-bold-duotone" height="22" />
+            </v-badge>
+        </v-btn>
         <div class="me-md-1">
             <ThemeToggler />
         </div>

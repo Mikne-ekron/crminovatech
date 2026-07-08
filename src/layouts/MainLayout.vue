@@ -94,6 +94,9 @@
       </button>
     </nav>
 
+    <!-- Panel lateral de notificaciones (lo abre la campanita) -->
+    <NotificationsDrawer />
+
     <!-- Cambiar de empresa (solo si el usuario tiene el permiso) -->
     <v-bottom-sheet v-model="empresaSheet">
       <v-card class="rounded-t-xl">
@@ -118,12 +121,15 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted, watch } from 'vue';
+import { ref, computed, onMounted, onUnmounted, watch } from 'vue';
 import { useAuthStore } from '@/stores/auth';
 import { useRouter } from 'vue-router';
 import { useCustomizerStore } from '@/stores/customizer';
 import { useCompanyStore } from '@/stores/company';
+import { useNotificationsStore } from '@/stores/notifications';
+import { ensureSubscribed } from '@/utils/push';
 import VerticalHeaderVue from './full/vertical-header/VerticalHeader.vue';
+import NotificationsDrawer from '@/components/shared/NotificationsDrawer.vue';
 import { Icon } from '@iconify/vue';
 import axios from '@/utils/axios';
 import { useTheme, useDisplay } from 'vuetify';
@@ -144,7 +150,21 @@ const applyThemePref = () => {
 const router = useRouter();
 const customizer = useCustomizerStore();
 const companyStore = useCompanyStore();
+const notifStore = useNotificationsStore();
 const theme = useTheme();
+
+// Sondeo de notificaciones + resuscripción (solo para ADMIN, que son quienes reciben).
+const isAdmin = computed(() => authStore.user?.role === 'ADMIN');
+let notifTimer = null;
+const onVisible = () => { if (document.visibilityState === 'visible' && isAdmin.value) notifStore.fetch(); };
+const startNotifications = () => {
+  if (!isAdmin.value) return;
+  notifStore.fetch();
+  ensureSubscribed(); // reasegura el push si ya hay permiso concedido
+  if (notifTimer) clearInterval(notifTimer);
+  notifTimer = setInterval(() => { if (document.visibilityState === 'visible') notifStore.fetch(); }, 45000);
+  document.addEventListener('visibilitychange', onVisible);
+};
 
 // Tema activo: combina empresa actual + modo (light/dark del usuario).
 // Si actTheme termina en DARK -> usar variante dark de la empresa, sino light.
@@ -222,7 +242,13 @@ onMounted(async () => {
         }
         applyThemePref();
         fetchMenu();
+        startNotifications();
     }
+});
+
+onUnmounted(() => {
+  if (notifTimer) clearInterval(notifTimer);
+  document.removeEventListener('visibilitychange', onVisible);
 });
 </script>
 

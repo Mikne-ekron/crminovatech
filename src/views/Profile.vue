@@ -62,6 +62,30 @@
       </v-card-text>
     </v-card>
 
+    <!-- Notificaciones (solo admin recibe) -->
+    <v-card v-if="user.role === 'ADMIN'" elevation="0" class="rounded-xl mb-4" border>
+      <v-card-title class="text-subtitle-1 font-weight-bold pt-4">Notificaciones</v-card-title>
+      <v-card-text>
+        <div class="d-flex align-center justify-space-between flex-wrap ga-3">
+          <div>
+            <div class="font-weight-medium">Notificaciones push</div>
+            <div class="text-body-2 text-medium-emphasis">{{ pushHint }}</div>
+          </div>
+          <v-chip v-if="pushPermission === 'granted'" color="success" variant="tonal" prepend-icon="mdi-check-circle">
+            Activadas
+          </v-chip>
+          <v-btn
+            v-else
+            color="primary" variant="tonal" :loading="pushBusy"
+            :disabled="pushMustInstall || pushPermission === 'denied'"
+            prepend-icon="mdi-bell-ring-outline" @click="activarPush"
+          >
+            Activar
+          </v-btn>
+        </div>
+      </v-card-text>
+    </v-card>
+
     <!-- Aplicación -->
     <v-card elevation="0" class="rounded-xl mb-4" border>
       <v-card-title class="text-subtitle-1 font-weight-bold pt-4">Aplicación</v-card-title>
@@ -93,6 +117,7 @@ import { useRouter } from 'vue-router';
 import { useAuthStore } from '@/stores/auth';
 import { useCustomizerStore } from '@/stores/customizer';
 import { useCompanyStore } from '@/stores/company';
+import { enablePush, getPermission, needsInstallForPush, pushSupported } from '@/utils/push';
 
 const router = useRouter();
 const authStore = useAuthStore();
@@ -165,6 +190,34 @@ const setTheme = async (val) => {
 // --- Empresa / sesión ---
 const switchCompany = (id) => companyStore.setCompany(id); // dispara recarga en MainLayout
 const logout = () => { authStore.logout(); router.push('/login'); };
+
+// --- Notificaciones push ---
+const pushPermission = ref(getPermission());
+const pushMustInstall = ref(needsInstallForPush());
+const pushBusy = ref(false);
+const pushHint = computed(() => {
+  if (!pushSupported()) return 'Este dispositivo no soporta notificaciones push.';
+  if (pushMustInstall.value) return 'Instala la app en tu iPhone (Compartir → Agregar a inicio) para recibir avisos push.';
+  if (pushPermission.value === 'denied') return 'Bloqueadas. Actívalas en los ajustes del navegador para este sitio.';
+  if (pushPermission.value === 'granted') return 'Recibirás cada movimiento de tesorería al instante.';
+  return 'Actívalas para enterarte de cada movimiento de tesorería al instante.';
+});
+const activarPush = async () => {
+  pushBusy.value = true;
+  try {
+    await enablePush();
+    pushPermission.value = 'granted';
+    notify('Notificaciones activadas');
+  } catch (e) {
+    pushPermission.value = getPermission();
+    pushMustInstall.value = needsInstallForPush();
+    if (e.message === 'needs-install') notify('Instala la app primero para activarlas', 'warning');
+    else if (e.message === 'denied') notify('Permiso de notificaciones denegado', 'error');
+    else notify('No se pudo activar', 'error');
+  } finally {
+    pushBusy.value = false;
+  }
+};
 
 // --- Actualizar la webapp (fuerza la última versión aunque el SW esté "pegado") ---
 const updating = ref(false);

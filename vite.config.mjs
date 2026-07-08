@@ -55,6 +55,9 @@ export default defineConfig({
         navigateFallback: '/index.html',
         globPatterns: ['**/*.{js,css,html,ico,png,svg,woff,woff2}'],
         cleanupOutdatedCaches: true,
+        // Añade los manejadores de Web Push (push / notificationclick) al SW
+        // generado, conservando el precache y el autoUpdate actuales.
+        importScripts: ['/push-sw.js'],
       },
     }),
     Components(),
