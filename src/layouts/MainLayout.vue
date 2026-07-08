@@ -14,22 +14,6 @@
       app
       class="leftSidebar"
     >
-      <!-- Profile Section -->
-      <div class="profile" :style="{ backgroundImage: `url(${userInfoBg})` }">
-        <div class="profile-img py-10">
-          <v-avatar size="50">
-            <img :src="userAvatar" width="50" :alt="authStore.user?.name || 'Usuario'" />
-          </v-avatar>
-        </div>
-        <div class="profile-name d-flex align-center px-3">
-          <div class="profile-logout w-100">
-            <SidebarProfile />
-          </div>
-        </div>
-      </div>
-
-      <v-divider></v-divider>
-
       <!-- Navigation Menu -->
       <div class="scrollnavbar">
         <v-list density="compact" nav class="py-3 px-4">
@@ -98,11 +82,8 @@ import { useRouter } from 'vue-router';
 import { useCustomizerStore } from '@/stores/customizer';
 import { useCompanyStore } from '@/stores/company';
 import VerticalHeaderVue from './full/vertical-header/VerticalHeader.vue';
-import SidebarProfile from '@/components/shared/SidebarProfile.vue';
 import { Icon } from '@iconify/vue';
 import axios from '@/utils/axios';
-import userInfoBgImage from '@/assets/images/backgrounds/user-info.jpg';
-import userAvatarImage from '@/assets/images/profile/user-1.jpg';
 import { useTheme } from 'vuetify';
 
 const authStore = useAuthStore();
@@ -121,10 +102,6 @@ const effectiveTheme = computed(() => {
     if (!c) return customizer.actTheme;
     return isDarkMode.value ? c.themeDark : c.themeLight;
 });
-
-// Images
-const userInfoBg = userInfoBgImage;
-const userAvatar = userAvatarImage;
 
 // Sincronizar el estado del drawer con el store del customizer
 const drawer = computed({
