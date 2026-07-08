@@ -20,64 +20,21 @@
     
     <!-- Action Cards Row -->
     <v-row class="mb-4">
-      <v-col cols="6" md="3" class="py-0 mb-3">
-        <v-card elevation="0" class="rounded-lg cursor-pointer card-dark-blue border-b-dark" @click="openDialog('ingreso')" style="border-bottom: 4px solid #4caf50 !important;">
-          <v-card-text class="pa-5">
-            <div class="d-flex align-center ga-4">
-              <v-btn icon class="bg-success elevation-0" dark>
-                <v-icon>mdi-cash-plus</v-icon>
+      <v-col v-for="c in accionCards" :key="c.tipo" cols="6" md="3" class="py-0 mb-3">
+        <v-card
+          elevation="0"
+          class="rounded-lg cursor-pointer card-dark-blue action-card"
+          :style="`border-bottom: 4px solid ${c.color} !important; box-shadow: 0 5px 18px ${c.shadow} !important;`"
+          @click="c.tipo === 'saldos' ? openSaldos() : openDialog(c.tipo)"
+        >
+          <v-card-text :class="smAndDown ? 'pa-4' : 'pa-5'">
+            <div class="d-flex align-center" :class="smAndDown ? 'ga-3' : 'ga-4'">
+              <v-btn icon :class="c.btnClass + ' elevation-0'" :size="smAndDown ? 'small' : 'default'" dark>
+                <v-icon>{{ c.icon }}</v-icon>
               </v-btn>
               <div>
-                <h2 class="text-h4 text-primary">Ingreso</h2>
-                <p class="text-medium-emphasis mt-1 text-15">Recibir dinero</p>
-              </div>
-            </div>
-          </v-card-text>
-        </v-card>
-      </v-col>
-      
-      <v-col cols="6" md="3" class="py-0 mb-3">
-        <v-card elevation="0" class="rounded-lg cursor-pointer card-dark-blue border-b-dark" @click="openDialog('egreso')" style="border-bottom: 4px solid #ff5252 !important;">
-          <v-card-text class="pa-5">
-            <div class="d-flex align-center ga-4">
-              <v-btn icon class="bg-error elevation-0" dark>
-                <v-icon>mdi-cash-minus</v-icon>
-              </v-btn>
-              <div>
-                <h2 class="text-h4 text-primary">Egreso</h2>
-                <p class="text-medium-emphasis mt-1 text-15">Gasto o pago</p>
-              </div>
-            </div>
-          </v-card-text>
-        </v-card>
-      </v-col>
-
-      <v-col cols="6" md="3" class="py-0 mb-3">
-        <v-card elevation="0" class="rounded-lg cursor-pointer card-dark-blue border-b-dark" @click="openDialog('traspaso')" style="border-bottom: 4px solid #ffc107 !important;">
-          <v-card-text class="pa-5">
-            <div class="d-flex align-center ga-4">
-              <v-btn icon class="bg-warning elevation-0" dark>
-                <v-icon>mdi-swap-horizontal</v-icon>
-              </v-btn>
-              <div>
-                <h2 class="text-h4 text-primary">Traspaso</h2>
-                <p class="text-medium-emphasis mt-1 text-15">Mover entre sobres</p>
-              </div>
-            </div>
-          </v-card-text>
-        </v-card>
-      </v-col>
-
-      <v-col cols="6" md="3" class="py-0 mb-3">
-        <v-card elevation="0" class="rounded-lg cursor-pointer card-dark-blue border-b-dark" style="border-bottom: 4px solid #03c9d7 !important;" @click="openSaldos">
-          <v-card-text class="pa-5">
-            <div class="d-flex align-center ga-4">
-              <v-btn icon class="bg-info elevation-0" dark>
-                <v-icon>mdi-email-outline</v-icon>
-              </v-btn>
-              <div>
-                <h2 class="text-h4 text-primary">Saldos</h2>
-                <p class="text-medium-emphasis mt-1 text-15">Ver desglose</p>
+                <h2 class="text-primary font-weight-bold" :class="smAndDown ? 'text-subtitle-1' : 'text-h4'">{{ c.label }}</h2>
+                <p v-if="!smAndDown" class="text-medium-emphasis mt-1 text-15">{{ c.sub }}</p>
               </div>
             </div>
           </v-card-text>
@@ -87,7 +44,7 @@
 
     <!-- KPI Cards Row -->
     <v-row dense>
-      <v-col v-for="k in kpiCards" :key="k.label" cols="6" sm="4" md="2">
+      <v-col v-for="k in kpiCardsVisibles" :key="k.label" cols="6" sm="4" md="2">
         <v-card elevation="0" class="rounded-lg card-dark-blue kpi-card"
           :class="k.type === 'in' ? 'kpi-in' : 'kpi-out'">
           <v-card-text class="pa-4 text-center">
@@ -102,6 +59,14 @@
         </v-card>
       </v-col>
     </v-row>
+
+    <!-- Ver más KPIs (solo móvil) -->
+    <div v-if="smAndDown" class="text-center mb-2">
+      <v-btn variant="text" size="small" color="primary" @click="showAllKpis = !showAllKpis">
+        {{ showAllKpis ? 'Ver menos' : 'Ver más indicadores' }}
+        <v-icon end>{{ showAllKpis ? 'mdi-chevron-up' : 'mdi-chevron-down' }}</v-icon>
+      </v-btn>
+    </div>
 
     <v-card class="mt-4 rounded-lg card-dark-blue" elevation="0">
       <v-card-title class="d-flex align-center flex-wrap ga-2 py-3 px-4 header-dark-blue border-b-dark">
@@ -131,7 +96,9 @@
               <span v-if="t.ingreso > 0" class="text-success font-weight-bold text-body-1">+{{ formatCurrency(t.ingreso) }}</span>
               <span v-else-if="t.egreso > 0" class="text-error font-weight-bold text-body-1">-{{ formatCurrency(t.egreso) }}</span>
               <span v-else class="text-light-muted font-weight-bold">{{ formatCurrency(t.monto) }}</span>
-              <span class="text-caption text-light-muted">Saldo: <strong class="text-primary">{{ formatCurrency(t.saldo) }}</strong></span>
+              <span class="text-caption text-light-muted d-flex align-center">
+                <v-icon size="14" class="mr-1">mdi-account-outline</v-icon>{{ t.usuario || '—' }}
+              </span>
             </div>
           </v-card-text>
         </v-card>
@@ -856,6 +823,18 @@ const kpiCards = computed(() => [
     { label: 'Ingreso Anual', value: kpis.value.ingresoAnio, type: 'in' },
     { label: 'Egreso Anual', value: kpis.value.egresoAnio, type: 'out' },
 ]);
+// En móvil: mostrar solo "hoy" y desplegar el resto con "Ver más".
+const showAllKpis = ref(false);
+const kpiCardsVisibles = computed(() =>
+    (smAndDown.value && !showAllKpis.value) ? kpiCards.value.slice(0, 2) : kpiCards.value);
+
+// Tarjetas de acción (data-driven)
+const accionCards = [
+    { tipo: 'ingreso', label: 'Ingreso', sub: 'Recibir dinero', icon: 'mdi-cash-plus', color: '#4caf50', shadow: 'rgba(76,175,80,0.28)', btnClass: 'bg-success' },
+    { tipo: 'egreso', label: 'Egreso', sub: 'Gasto o pago', icon: 'mdi-cash-minus', color: '#ff5252', shadow: 'rgba(255,82,82,0.28)', btnClass: 'bg-error' },
+    { tipo: 'traspaso', label: 'Traspaso', sub: 'Mover entre sobres', icon: 'mdi-swap-horizontal', color: '#ffc107', shadow: 'rgba(255,193,7,0.28)', btnClass: 'bg-warning' },
+    { tipo: 'saldos', label: 'Saldos', sub: 'Ver desglose', icon: 'mdi-email-outline', color: '#03c9d7', shadow: 'rgba(3,201,215,0.28)', btnClass: 'bg-info' },
+];
 
 const dialogTitle = computed(() => {
     if (dialog.value.type === 'ingreso') return 'Registrar Ingreso';
@@ -937,6 +916,11 @@ onUnmounted(() => {
 
 /* Pull to refresh */
 .ptr-indicator { overflow: hidden; transition: height 0.15s ease; }
+
+/* Tarjetas de acción tipo botón */
+.action-card { transition: transform 0.15s ease, box-shadow 0.15s ease; }
+.action-card:hover { transform: translateY(-2px); }
+.action-card:active { transform: scale(0.98); }
 
 /* ============ Indicadores de flujo (KPIs) ============ */
 .kpi-card { transition: transform 0.2s ease, box-shadow 0.2s ease; border-bottom: 3px solid transparent; }
