@@ -8,24 +8,24 @@
     elevation="14"
     class="pwa-install"
   >
-    <div class="d-flex align-center ga-3">
-      <img src="/pwa-192.png" alt="Inovatech" width="44" height="44" style="border-radius:10px" />
+    <div class="d-flex align-center ga-4 py-1">
+      <img src="/pwa-192.png" alt="Inovatech" width="60" height="60" style="border-radius:14px; box-shadow:0 3px 10px rgba(0,0,0,0.25)" />
       <div>
-        <div class="font-weight-bold text-body-1">Instala Inovatech</div>
-        <div v-if="isIOS" class="text-caption text-medium-emphasis">
-          Toca <v-icon size="15">mdi-export-variant</v-icon> <strong>Compartir</strong>
+        <div class="font-weight-bold text-h6 mb-1">Instala Inovatech</div>
+        <div v-if="isIOS" class="text-body-2 text-medium-emphasis">
+          Toca <v-icon size="18" class="mx-1">mdi-export-variant</v-icon><strong>Compartir</strong>
           y luego <strong>“Agregar a inicio”</strong>.
         </div>
-        <div v-else class="text-caption text-medium-emphasis">
+        <div v-else class="text-body-2 text-medium-emphasis">
           Añádela a tu pantalla de inicio para un acceso rápido, como una app.
         </div>
       </div>
     </div>
     <template v-slot:actions>
-      <v-btn v-if="canInstall" color="primary" variant="flat" size="small" class="mr-1" @click="install">
+      <v-btn v-if="canInstall" color="primary" variant="flat" class="mr-1" @click="install">
         Instalar
       </v-btn>
-      <v-btn icon="mdi-close" variant="text" size="small" @click="dismiss"></v-btn>
+      <v-btn icon="mdi-close" variant="text" @click="dismiss"></v-btn>
     </template>
   </v-snackbar>
 </template>
