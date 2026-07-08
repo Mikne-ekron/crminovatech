@@ -1,6 +1,13 @@
 <template>
   <v-container fluid class="h-100 bg-dark-canvas">
-    
+
+    <!-- Pull to refresh (móvil) -->
+    <div v-if="ptr.pulling || ptr.refreshing" class="ptr-indicator d-flex align-center justify-center"
+         :style="{ height: (ptr.refreshing ? 50 : ptr.dist) + 'px' }">
+      <v-progress-circular v-if="ptr.refreshing" indeterminate size="26" width="3" color="primary" />
+      <v-icon v-else color="primary" :style="{ transform: 'rotate(' + (ptr.dist / PTR_MAX * 180) + 'deg)' }">mdi-arrow-down</v-icon>
+    </div>
+
     <!-- Page Header -->
     <PageHeader 
       title="Caja Chica - Operaciones" 
@@ -13,7 +20,7 @@
     
     <!-- Action Cards Row -->
     <v-row class="mb-4">
-      <v-col cols="12" md="3" class="py-0 mb-3">
+      <v-col cols="6" md="3" class="py-0 mb-3">
         <v-card elevation="0" class="rounded-lg cursor-pointer card-dark-blue border-b-dark" @click="openDialog('ingreso')" style="border-bottom: 4px solid #4caf50 !important;">
           <v-card-text class="pa-5">
             <div class="d-flex align-center ga-4">
@@ -29,7 +36,7 @@
         </v-card>
       </v-col>
       
-      <v-col cols="12" md="3" class="py-0 mb-3">
+      <v-col cols="6" md="3" class="py-0 mb-3">
         <v-card elevation="0" class="rounded-lg cursor-pointer card-dark-blue border-b-dark" @click="openDialog('egreso')" style="border-bottom: 4px solid #ff5252 !important;">
           <v-card-text class="pa-5">
             <div class="d-flex align-center ga-4">
@@ -45,7 +52,7 @@
         </v-card>
       </v-col>
 
-      <v-col cols="12" md="3" class="py-0 mb-3">
+      <v-col cols="6" md="3" class="py-0 mb-3">
         <v-card elevation="0" class="rounded-lg cursor-pointer card-dark-blue border-b-dark" @click="openDialog('traspaso')" style="border-bottom: 4px solid #ffc107 !important;">
           <v-card-text class="pa-5">
             <div class="d-flex align-center ga-4">
@@ -61,7 +68,7 @@
         </v-card>
       </v-col>
 
-      <v-col cols="12" md="3" class="py-0 mb-3">
+      <v-col cols="6" md="3" class="py-0 mb-3">
         <v-card elevation="0" class="rounded-lg cursor-pointer card-dark-blue border-b-dark" style="border-bottom: 4px solid #03c9d7 !important;" @click="openSaldos">
           <v-card-text class="pa-5">
             <div class="d-flex align-center ga-4">
@@ -107,7 +114,32 @@
         <v-chip color="primary" variant="flat">Saldo: {{ formatCurrency(globalBalance) }}</v-chip>
       </v-card-title>
 
+      <!-- Móvil: lista de tarjetas -->
+      <div v-if="smAndDown" class="pa-3">
+        <div v-if="!historialFiltrado.length" class="text-center text-light-muted py-8">Sin operaciones.</div>
+        <v-card v-for="t in historialFiltrado" :key="t.id" variant="tonal" class="mb-2 rounded-lg op-card" elevation="0">
+          <v-card-text class="py-3 px-4">
+            <div class="d-flex justify-space-between align-center mb-1">
+              <v-chip size="small" :color="getTypeColor(t.tipo)" variant="flat" class="font-weight-bold">{{ t.tipo }}</v-chip>
+              <span class="text-caption text-light-muted">{{ formatDate(t.fecha) }}</span>
+            </div>
+            <div class="font-weight-medium text-body-1">{{ t.concepto || '—' }}</div>
+            <div class="text-caption text-light-muted mb-2">
+              {{ t.sobre_display }}<span v-if="t.categoria && t.categoria !== '-'"> · {{ t.categoria }}</span>
+            </div>
+            <div class="d-flex justify-space-between align-center">
+              <span v-if="t.ingreso > 0" class="text-success font-weight-bold text-body-1">+{{ formatCurrency(t.ingreso) }}</span>
+              <span v-else-if="t.egreso > 0" class="text-error font-weight-bold text-body-1">-{{ formatCurrency(t.egreso) }}</span>
+              <span v-else class="text-light-muted font-weight-bold">{{ formatCurrency(t.monto) }}</span>
+              <span class="text-caption text-light-muted">Saldo: <strong class="text-primary">{{ formatCurrency(t.saldo) }}</strong></span>
+            </div>
+          </v-card-text>
+        </v-card>
+      </div>
+
+      <!-- Desktop: tabla -->
       <v-data-table
+        v-else
         :headers="headers"
         :items="historialFiltrado"
         item-value="id"
@@ -467,12 +499,48 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from 'vue';
+import { ref, computed, onMounted, onUnmounted } from 'vue';
+import { useDisplay } from 'vuetify';
 import { useAuthStore } from '@/stores/auth';
 import axios from '@/utils/axios';
 import PageHeader from '@/components/shared/PageHeader.vue';
 
 const authStore = useAuthStore();
+const { smAndDown } = useDisplay();
+
+// Recarga completa de datos (usada por el botón implícito y el pull-to-refresh)
+const reloadAll = async () => {
+    await Promise.all([fetchOperations(), fetchKpis(), fetchCatalogos()]);
+};
+
+// --- Pull to refresh (solo táctil; en desktop no hace nada) ---
+const ptr = ref({ pulling: false, dist: 0, refreshing: false });
+let ptrStartY = null;
+const PTR_MAX = 90, PTR_THRESHOLD = 65;
+const onTouchStart = (e) => {
+    ptrStartY = (window.scrollY <= 0 && !ptr.value.refreshing) ? e.touches[0].clientY : null;
+};
+const onTouchMove = (e) => {
+    if (ptrStartY == null || ptr.value.refreshing) return;
+    const dy = e.touches[0].clientY - ptrStartY;
+    if (dy > 0 && window.scrollY <= 0) {
+        ptr.value.pulling = true;
+        ptr.value.dist = Math.min(dy * 0.5, PTR_MAX);
+    } else {
+        ptr.value.pulling = false;
+        ptr.value.dist = 0;
+    }
+};
+const onTouchEnd = async () => {
+    if (ptr.value.pulling && ptr.value.dist >= PTR_THRESHOLD && !ptr.value.refreshing) {
+        ptr.value.refreshing = true;
+        ptr.value.dist = 50;
+        try { await reloadAll(); } finally { ptr.value.refreshing = false; }
+    }
+    ptr.value.pulling = false;
+    ptr.value.dist = 0;
+    ptrStartY = null;
+};
 const dialog = ref({ show: false, type: 'ingreso' });
 const valid = ref(false);
 const loading = ref(false);
@@ -835,6 +903,14 @@ onMounted(() => {
     fetchOperations();
     fetchCatalogos();
     fetchKpis();
+    window.addEventListener('touchstart', onTouchStart, { passive: true });
+    window.addEventListener('touchmove', onTouchMove, { passive: true });
+    window.addEventListener('touchend', onTouchEnd);
+});
+onUnmounted(() => {
+    window.removeEventListener('touchstart', onTouchStart);
+    window.removeEventListener('touchmove', onTouchMove);
+    window.removeEventListener('touchend', onTouchEnd);
 });
 </script>
 
@@ -858,6 +934,9 @@ onMounted(() => {
   font-size: 12px; padding-inline: 8px !important;
 }
 .hist-table :deep(th .d-flex) { overflow: visible; }
+
+/* Pull to refresh */
+.ptr-indicator { overflow: hidden; transition: height 0.15s ease; }
 
 /* ============ Indicadores de flujo (KPIs) ============ */
 .kpi-card { transition: transform 0.2s ease, box-shadow 0.2s ease; border-bottom: 3px solid transparent; }
