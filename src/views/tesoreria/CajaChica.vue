@@ -284,6 +284,10 @@
                         <v-col cols="12">
                             <v-select v-model="editedItem.sobreDestino" :items="sobresList" label="Sobre destino *"
                                 prepend-inner-icon="mdi-email" variant="outlined" :rules="[reqRule]"></v-select>
+                            <div v-if="editedItem.sobreDestino" class="text-caption text-medium-emphasis">
+                                <v-icon size="14" class="mr-1">mdi-wallet-outline</v-icon>
+                                Saldo del sobre: {{ formatCurrency(saldoSobre(editedItem.sobreDestino)) }}
+                            </div>
                         </v-col>
                     </template>
 
@@ -296,6 +300,12 @@
                             variant="outlined"
                             :rules="[reqRule]"
                         ></v-select>
+                        <div v-if="editedItem.sobreOrigen" class="text-caption mb-3"
+                            :class="excedeSaldo ? 'text-error font-weight-bold' : 'text-medium-emphasis'">
+                            <v-icon size="14" class="mr-1">{{ excedeSaldo ? 'mdi-alert' : 'mdi-wallet-outline' }}</v-icon>
+                            Saldo del sobre: {{ formatCurrency(saldoOrigen) }}
+                            <span v-if="excedeSaldo"> — el sobre no puede quedar en negativo</span>
+                        </div>
                         <v-select
                             v-model="editedItem.categoria"
                             :items="categoriasFull"
@@ -328,19 +338,31 @@
                     </v-col>
 
                     <v-col cols="12" v-if="dialog.type === 'traspaso'">
-                        <v-select 
-                            v-model="editedItem.sobreOrigen" 
-                            :items="sobresList" 
-                            label="Desde Sobre (Origen)" 
+                        <v-select
+                            v-model="editedItem.sobreOrigen"
+                            :items="sobresList"
+                            label="Desde Sobre (Origen) *"
                             variant="outlined"
+                            :rules="[reqRule]"
                         ></v-select>
-                        <v-icon class="mb-2 mx-auto d-block text-white">mdi-arrow-down-bold</v-icon>
-                        <v-select 
-                            v-model="editedItem.sobreDestino" 
-                            :items="sobresList" 
-                            label="Hacia Sobre (Destino)" 
+                        <div v-if="editedItem.sobreOrigen" class="text-caption mb-3"
+                            :class="excedeSaldo ? 'text-error font-weight-bold' : 'text-medium-emphasis'">
+                            <v-icon size="14" class="mr-1">{{ excedeSaldo ? 'mdi-alert' : 'mdi-wallet-outline' }}</v-icon>
+                            Saldo del sobre: {{ formatCurrency(saldoOrigen) }}
+                            <span v-if="excedeSaldo"> — el sobre no puede quedar en negativo</span>
+                        </div>
+                        <v-icon class="mb-2 mx-auto d-block text-medium-emphasis">mdi-arrow-down-bold</v-icon>
+                        <v-select
+                            v-model="editedItem.sobreDestino"
+                            :items="sobresList"
+                            label="Hacia Sobre (Destino) *"
                             variant="outlined"
+                            :rules="[reqRule]"
                         ></v-select>
+                        <div v-if="editedItem.sobreDestino" class="text-caption text-medium-emphasis">
+                            <v-icon size="14" class="mr-1">mdi-wallet-outline</v-icon>
+                            Saldo del sobre: {{ formatCurrency(saldoSobre(editedItem.sobreDestino)) }}
+                        </div>
                     </v-col>
                 </v-row>
             </v-form>
@@ -349,7 +371,7 @@
         <v-card-actions class="border-t-dark">
             <v-spacer></v-spacer>
             <v-btn variant="text" @click="dialog.show = false">Cancelar</v-btn>
-            <v-btn :color="dialogColor" variant="flat" @click="saveOperation">Guardar Operación</v-btn>
+            <v-btn :color="dialogColor" variant="flat" :disabled="excedeSaldo" @click="saveOperation">Guardar Operación</v-btn>
         </v-card-actions>
       </v-card>
     </v-dialog>
@@ -415,6 +437,7 @@ const form = ref(null);
 
 // Listas Dinámicas
 const sobresList = ref([]);
+const sobresFull = ref([]);     // [{ id, nombre, saldo, ... }] para consultar saldo
 const categoriasFull = ref([]); // [{ nombre, subcategorias: [{ nombre, es_manual }] }]
 
 const fetchCatalogos = async () => {
@@ -425,6 +448,7 @@ const fetchCatalogos = async () => {
     ]);
 
     sobresList.value = resSobres.data.map(s => s.nombre);
+    sobresFull.value = resSobres.data;
     categoriasFull.value = resCats.data;
   } catch (e) {
     console.error("Error cargando catálogos", e);
@@ -444,6 +468,18 @@ const editedItem = ref({
 
 // --- Categoría / Subcategoría (solo egresos) ---
 const reqRule = (v) => (v !== null && v !== undefined && String(v).trim() !== '') || 'Requerido';
+
+// --- Saldo del sobre y regla: los sobres nunca pueden quedar en negativo ---
+const saldoSobre = (nombre) => {
+    const s = sobresFull.value.find(x => x.nombre === nombre);
+    return s ? Number(s.saldo) : 0;
+};
+const montoNum = computed(() => Number(editedItem.value.monto) || 0);
+// El sobre de ORIGEN (egreso / traspaso) es el que puede quedar en negativo.
+const sobreOrigenSel = computed(() =>
+    (dialog.value.type === 'egreso' || dialog.value.type === 'traspaso') ? editedItem.value.sobreOrigen : null);
+const saldoOrigen = computed(() => sobreOrigenSel.value ? saldoSobre(sobreOrigenSel.value) : 0);
+const excedeSaldo = computed(() => !!sobreOrigenSel.value && montoNum.value > saldoOrigen.value);
 
 // Subcategorías de la categoría elegida
 const subcatsForSelected = computed(() => {
@@ -581,6 +617,14 @@ const saveOperation = async () => {
         return;
     }
 
+    // Regla: ningún sobre puede quedar en negativo (aplica a egreso y traspaso).
+    if (excedeSaldo.value) {
+        alert(`El sobre "${editedItem.value.sobreOrigen}" no puede quedar en negativo.\n\n` +
+              `Saldo disponible: ${formatCurrency(saldoOrigen.value)}\n` +
+              `Monto solicitado: ${formatCurrency(montoNum.value)}`);
+        return;
+    }
+
     try {
         const subcatFinal = isManualSub.value ? editedItem.value.subcategoriaManual : editedItem.value.subcategoria;
         const payload = {
@@ -621,11 +665,12 @@ const saveOperation = async () => {
 
         await fetchOperations();
         fetchKpis();
+        fetchCatalogos(); // refresca los saldos de los sobres
         dialog.value.show = false;
 
     } catch (error) {
         console.error("Error guardando:", error);
-        alert("Error al guardar operación");
+        alert(error.response?.data?.message || "Error al guardar operación");
     }
 };
 
