@@ -18,6 +18,13 @@ import 'unfonts.css'
 import '@/scss/style.scss'
 import '@/assets/styles/dark-theme.css'
 
+// Captura temprana del evento de instalación (Android/Chrome), antes de montar,
+// para no perderlo si dispara antes de que el componente exista.
+window.addEventListener('beforeinstallprompt', (e) => {
+  e.preventDefault()
+  window.__deferredInstallPrompt = e
+})
+
 const app = createApp(App)
 
 registerPlugins(app)
