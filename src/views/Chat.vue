@@ -1,5 +1,5 @@
 <template>
-  <div class="chat-page" :class="{ 'is-mobile': smAndDown }">
+  <div class="chat-page" :class="{ 'is-mobile': smAndDown, 'list-mode': smAndDown && !chat.activeId }">
     <!-- ===== Lista de conversaciones ===== -->
     <div v-show="showList" class="chat-list">
       <div class="d-flex align-center justify-space-between px-4 py-3 chat-list-head">
@@ -31,7 +31,9 @@
             </v-list-item-title>
             <v-list-item-subtitle class="d-flex justify-space-between align-center">
               <span class="text-truncate">
-                <span v-if="c.lastMessage && c.lastMessage.senderId === myId" class="text-medium-emphasis">Tú: </span>{{ c.lastMessage ? c.lastMessage.body : 'Inicia la conversación' }}
+                <span v-if="c.lastMessage && c.lastMessage.senderId === myId" class="text-medium-emphasis">Tú: </span>
+                <template v-if="c.lastMessage && c.lastMessage.msgType === 'image'"><v-icon size="14" class="mb-1">mdi-image-outline</v-icon> Foto</template>
+                <template v-else>{{ c.lastMessage ? c.lastMessage.body : 'Inicia la conversación' }}</template>
               </span>
               <v-badge v-if="c.unread > 0" :content="c.unread" color="error" inline class="ms-2"></v-badge>
             </v-list-item-subtitle>
@@ -58,8 +60,13 @@
           <div v-if="chat.loadingMsgs" class="text-center py-6"><v-progress-circular indeterminate color="primary" size="28" /></div>
           <template v-else>
             <div v-for="m in chat.messages" :key="m.msgId" class="msg-row" :class="{ mine: m.senderId === myId }">
-              <div class="msg-bubble" :class="{ mine: m.senderId === myId }">
-                <div class="msg-text">{{ m.body }}</div>
+              <div class="msg-bubble" :class="{ mine: m.senderId === myId, 'has-img': m.msgType === 'image' }">
+                <v-img
+                  v-if="m.msgType === 'image' && m.attachment"
+                  :src="m.attachment" :max-width="220" :max-height="280"
+                  cover class="msg-img rounded-lg" @click="viewImage(m.attachment)"
+                />
+                <div v-if="m.body" class="msg-text" :class="{ 'mt-1': m.msgType === 'image' }">{{ m.body }}</div>
                 <div class="msg-meta">
                   <span class="msg-time">{{ time(m.createdAt) }}</span>
                   <v-icon v-if="m.senderId === myId" size="15" :color="isRead(m) ? '#34B7F1' : 'rgba(255,255,255,0.75)'" class="ms-1">mdi-check-all</v-icon>
@@ -70,6 +77,10 @@
         </div>
 
         <div class="chat-input">
+          <v-btn icon variant="text" size="small" color="primary" class="me-1" :loading="chat.sending" @click="pickImage">
+            <v-icon>mdi-image-plus-outline</v-icon>
+          </v-btn>
+          <input ref="fileInput" type="file" accept="image/*" hidden @change="onImage" />
           <v-textarea
             v-model="draft" placeholder="Escribe un mensaje..." rows="1" auto-grow max-rows="5"
             variant="solo" density="comfortable" hide-details rounded="xl" bg-color="surface"
@@ -112,6 +123,13 @@
         </v-card-text>
       </v-card>
     </v-dialog>
+
+    <!-- Visor de imagen a pantalla completa -->
+    <v-dialog v-model="imgViewer" max-width="96vw">
+      <div class="img-viewer" @click="imgViewer = false">
+        <v-img :src="viewerSrc" max-height="88vh" contain />
+      </div>
+    </v-dialog>
   </div>
 </template>
 
@@ -133,6 +151,9 @@ const draft = ref('');
 const newDialog = ref(false);
 const userSearch = ref('');
 const scrollBox = ref(null);
+const fileInput = ref(null);
+const imgViewer = ref(false);
+const viewerSrc = ref('');
 let timer = null;
 
 const showList = computed(() => !smAndDown.value || !chat.activeId);
@@ -184,6 +205,43 @@ const send = async () => {
   scrollBottom();
 };
 
+// --- Adjuntar imagen (usa la cámara / galería del teléfono) ---
+const pickImage = () => fileInput.value?.click();
+const resizeImage = (file, maxDim = 1024, quality = 0.6) => new Promise((resolve, reject) => {
+  const reader = new FileReader();
+  reader.onerror = reject;
+  reader.onload = () => {
+    const img = new Image();
+    img.onerror = reject;
+    img.onload = () => {
+      let { width, height } = img;
+      if (Math.max(width, height) > maxDim) {
+        const s = maxDim / Math.max(width, height);
+        width = Math.round(width * s); height = Math.round(height * s);
+      }
+      const canvas = document.createElement('canvas');
+      canvas.width = width; canvas.height = height;
+      canvas.getContext('2d').drawImage(img, 0, 0, width, height);
+      resolve(canvas.toDataURL('image/jpeg', quality));
+    };
+    img.src = reader.result;
+  };
+  reader.readAsDataURL(file);
+});
+const onImage = async (e) => {
+  const file = e.target.files?.[0];
+  e.target.value = '';
+  if (!file) return;
+  try {
+    const dataUrl = await resizeImage(file);
+    const caption = draft.value.trim();
+    draft.value = '';
+    await chat.sendMessage(caption, dataUrl);
+    scrollBottom();
+  } catch (err) { /* noop */ }
+};
+const viewImage = (src) => { viewerSrc.value = src; imgViewer.value = true; };
+
 const loadFromRoute = async () => {
   const id = route.params.id;
   if (id) { await chat.openConversation(id); scrollBottom(); }
@@ -211,7 +269,10 @@ onUnmounted(() => { if (timer) clearInterval(timer); });
   height: calc(100dvh - 60px);
   overflow: hidden;
 }
-.chat-page.is-mobile { height: calc(100dvh - 60px - 92px - env(safe-area-inset-bottom)); }
+/* En móvil con conversación abierta la barra inferior se oculta → alto completo.
+   En la lista (sin conversación) se descuenta la barra flotante. */
+.chat-page.is-mobile { height: calc(100dvh - 60px); }
+.chat-page.is-mobile.list-mode { height: calc(100dvh - 60px - 92px - env(safe-area-inset-bottom)); }
 .chat-list {
   width: 340px;
   border-right: 1px solid rgba(var(--v-theme-on-surface), 0.08);
@@ -242,7 +303,12 @@ onUnmounted(() => { if (timer) clearInterval(timer); });
   border-radius: 16px;
   border-bottom-right-radius: 4px;
 }
+.msg-bubble.has-img { padding: 4px; }
+.msg-bubble.has-img .msg-text { padding: 0 6px; }
+.msg-bubble.has-img .msg-meta { padding: 0 6px 2px; }
+.msg-img { cursor: pointer; display: block; }
 .msg-text { white-space: pre-wrap; word-break: break-word; font-size: 0.95rem; line-height: 1.35; }
+.img-viewer { display: flex; align-items: center; justify-content: center; cursor: zoom-out; }
 .msg-meta { display: flex; align-items: center; justify-content: flex-end; gap: 2px; margin-top: 2px; }
 .msg-time { font-size: 0.68rem; opacity: 0.7; }
 .chat-input {

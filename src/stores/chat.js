@@ -52,12 +52,12 @@ export const useChatStore = defineStore('chat', {
         if (hadNew) this.markRead(this.activeId);
       } catch (e) { /* silencioso */ }
     },
-    async sendMessage(body) {
+    async sendMessage(body, image = null) {
       const text = (body || '').trim();
-      if (!this.activeId || !text) return;
+      if (!this.activeId || (!text && !image)) return;
       this.sending = true;
       try {
-        const { data } = await axios.post(`/chat/conversations/${this.activeId}/messages`, { body: text });
+        const { data } = await axios.post(`/chat/conversations/${this.activeId}/messages`, { body: text, image });
         this.messages.push(data);
         this.fetchConversations();
       } catch (e) { /* silencioso */ }

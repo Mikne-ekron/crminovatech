@@ -64,7 +64,7 @@
       </div>
     </v-navigation-drawer>
 
-    <v-main>
+    <v-main :class="{ 'no-bottom-space': hideBottomNav }">
       <v-container fluid class="pa-0 h-100 bg-surface">
         <router-view v-slot="{ Component }">
           <v-fade-transition mode="out-in">
@@ -74,21 +74,18 @@
       </v-container>
     </v-main>
 
-    <!-- Barra flotante estilo app (solo móvil): fija, centrada, glass -->
-    <nav v-if="smAndDown" class="floating-nav">
-      <button type="button" class="fnav-item" @click="goSearch">
-        <v-icon size="22">mdi-magnify</v-icon>
-        <span>Buscar</span>
+    <!-- Barra flotante estilo app (solo móvil): fija, centrada, glass.
+         Se oculta dentro de una conversación para dejar solo el chat. -->
+    <nav v-if="smAndDown && !hideBottomNav" class="floating-nav">
+      <button type="button" class="fnav-item fnav-home" @click="goHome">
+        <v-icon size="24">mdi-home</v-icon>
+        <span>Inicio</span>
       </button>
       <button type="button" class="fnav-item" @click="goChat">
         <v-badge :content="chatStore.unread" :model-value="chatStore.unread > 0" color="error" offset-x="-2" offset-y="-2">
           <v-icon size="22">mdi-send-outline</v-icon>
         </v-badge>
         <span>Mensajes</span>
-      </button>
-      <button type="button" class="fnav-item fnav-home" @click="goHome">
-        <v-icon size="24">mdi-home</v-icon>
-        <span>Inicio</span>
       </button>
       <button v-if="authStore.canSwitchCompany" type="button" class="fnav-item" @click="empresaSheet = true">
         <v-icon size="22">mdi-domain</v-icon>
@@ -129,7 +126,7 @@
 <script setup>
 import { ref, computed, onMounted, onUnmounted, watch } from 'vue';
 import { useAuthStore } from '@/stores/auth';
-import { useRouter } from 'vue-router';
+import { useRouter, useRoute } from 'vue-router';
 import { useCustomizerStore } from '@/stores/customizer';
 import { useCompanyStore } from '@/stores/company';
 import { useNotificationsStore } from '@/stores/notifications';
@@ -170,6 +167,9 @@ const onVisible = () => {
   chatStore.fetchUnread();
 };
 const goChat = () => router.push('/app/chat');
+// Oculta la barra inferior cuando hay una conversación abierta (móvil).
+const route = useRoute();
+const hideBottomNav = computed(() => smAndDown.value && route.name === 'Chat' && !!route.params.id);
 const startNotifications = () => {
   ensureSubscribed(); // reasegura el push si ya hay permiso concedido (para avisos y mensajes)
   chatStore.fetchUnread();
@@ -418,5 +418,7 @@ onUnmounted(() => {
 /* Espacio para que el contenido no quede tapado por la barra flotante */
 @media (max-width: 960px) {
   .v-main { padding-bottom: calc(92px + env(safe-area-inset-bottom)) !important; }
+  /* Dentro de una conversación la barra se oculta → sin espacio inferior */
+  .v-main.no-bottom-space { padding-bottom: 0 !important; }
 }
 </style>
