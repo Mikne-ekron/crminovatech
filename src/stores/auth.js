@@ -72,6 +72,15 @@ export const useAuthStore = defineStore('auth', {
             }
         },
 
+        // Actualiza perfil (avatar / tema / nombre) y refleja en el estado local
+        async saveProfile(payload) {
+            await axios.put('/auth/profile', payload);
+            if (!this.user) this.user = {};
+            if (payload.avatar !== undefined) this.user.avatar = payload.avatar;
+            if (payload.themePref !== undefined) this.user.themePref = payload.themePref;
+            if (payload.fullName) this.user.name = payload.fullName;
+        },
+
         logout() {
             this.token = null;
             this.user = null;

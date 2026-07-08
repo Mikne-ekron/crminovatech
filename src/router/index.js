@@ -29,6 +29,11 @@ const routes = [
         name: 'Dashboard',
         component: () => import('@/views/Dashboard.vue')
       },
+      {
+        path: 'perfil',
+        name: 'Perfil',
+        component: () => import('@/views/Profile.vue')
+      },
 
       // --- TESORERÍA ---
 
