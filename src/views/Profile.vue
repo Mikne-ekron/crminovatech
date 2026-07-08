@@ -62,6 +62,22 @@
       </v-card-text>
     </v-card>
 
+    <!-- Aplicación -->
+    <v-card elevation="0" class="rounded-xl mb-4" border>
+      <v-card-title class="text-subtitle-1 font-weight-bold pt-4">Aplicación</v-card-title>
+      <v-card-text>
+        <div class="d-flex align-center justify-space-between flex-wrap ga-3">
+          <div>
+            <div class="font-weight-medium">Buscar actualizaciones</div>
+            <div class="text-body-2 text-medium-emphasis">Si no ves los últimos cambios, actualiza para traer la versión más reciente.</div>
+          </div>
+          <v-btn color="primary" variant="tonal" prepend-icon="mdi-update" :loading="updating" @click="updateApp">
+            Actualizar app
+          </v-btn>
+        </div>
+      </v-card-text>
+    </v-card>
+
     <!-- Cerrar sesión -->
     <v-btn block color="error" variant="tonal" size="large" prepend-icon="mdi-logout" @click="logout">
       Cerrar sesión
@@ -149,6 +165,27 @@ const setTheme = async (val) => {
 // --- Empresa / sesión ---
 const switchCompany = (id) => companyStore.setCompany(id); // dispara recarga en MainLayout
 const logout = () => { authStore.logout(); router.push('/login'); };
+
+// --- Actualizar la webapp (fuerza la última versión aunque el SW esté "pegado") ---
+const updating = ref(false);
+const updateApp = async () => {
+  updating.value = true;
+  try {
+    if ('serviceWorker' in navigator) {
+      const regs = await navigator.serviceWorker.getRegistrations();
+      await Promise.all(regs.map(async (r) => {
+        try { await r.update(); } catch (_) { /* noop */ }
+        if (r.waiting) r.waiting.postMessage({ type: 'SKIP_WAITING' });
+      }));
+    }
+    if (window.caches) {
+      const keys = await caches.keys();
+      await Promise.all(keys.map(k => caches.delete(k)));
+    }
+  } catch (e) { /* ignore */ }
+  // Recarga forzada para tomar la versión nueva
+  window.location.reload();
+};
 </script>
 
 <style scoped>
