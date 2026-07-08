@@ -84,9 +84,10 @@ import { useCompanyStore } from '@/stores/company';
 import VerticalHeaderVue from './full/vertical-header/VerticalHeader.vue';
 import { Icon } from '@iconify/vue';
 import axios from '@/utils/axios';
-import { useTheme } from 'vuetify';
+import { useTheme, useDisplay } from 'vuetify';
 
 const authStore = useAuthStore();
+const { mobile } = useDisplay();
 const router = useRouter();
 const customizer = useCustomizerStore();
 const companyStore = useCompanyStore();
@@ -155,6 +156,10 @@ const fetchMenu = async () => {
 };
 
 onMounted(async () => {
+    // Iniciar siempre con el menú colapsado: rail en desktop, cerrado en móvil.
+    customizer.mini_sidebar = true;
+    if (mobile.value) customizer.Sidebar_drawer = false;
+
     if (!authStore.isAuthenticated) {
         router.push('/login');
     } else {

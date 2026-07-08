@@ -8,7 +8,7 @@ const getApiBaseUrl = () => {
 export default {
     Sidebar_drawer: true,
     Customizer_drawer: false,
-    mini_sidebar: false,
+    mini_sidebar: true, // arranca colapsado (rail) en desktop
     setHorizontalLayout: false, // Horizontal layout
     setRTLLayout: false, // RTL layout
     actTheme: 'BLUE_THEME',
