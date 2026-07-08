@@ -251,21 +251,39 @@ const loadFromRoute = async () => {
 };
 
 // --- Ajuste de alto con el teclado (solo se mueve el chat, no los encabezados) ---
-// Usamos visualViewport (que sí encoge al abrir el teclado) para fijar el alto
-// del chat; así el documento no hace scroll y la barra superior / encabezado de
-// la conversación quedan fijos.
+// En iOS, al abrir el teclado la VENTANA hace scroll y los elementos position:fixed
+// (la barra superior) se van con ella. Para evitarlo: bloqueamos el documento al
+// alto visible (visualViewport) y forzamos el scroll a 0 en cada cambio; así la
+// barra superior y el encabezado de la conversación quedan fijos y solo se ajusta
+// el área de mensajes.
 const appBarH = () => (document.getElementById('top')?.offsetHeight || 60);
+const lockViewport = () => {
+  const vh = window.visualViewport ? window.visualViewport.height : window.innerHeight;
+  const de = document.documentElement;
+  de.style.height = vh + 'px';
+  de.style.overflow = 'hidden';
+  document.body.style.height = vh + 'px';
+  document.body.style.overflow = 'hidden';
+  if (window.scrollY !== 0) window.scrollTo(0, 0);
+};
+const unlockViewport = () => {
+  const de = document.documentElement;
+  de.style.height = '';
+  de.style.overflow = '';
+  document.body.style.height = '';
+  document.body.style.overflow = '';
+};
 const applyChatHeight = () => {
   const el = pageEl.value;
   if (!el) return;
   if (smAndDown.value && chat.activeId) {
+    lockViewport();
     const vh = window.visualViewport ? window.visualViewport.height : window.innerHeight;
     el.style.height = Math.max(220, vh - appBarH()) + 'px';
-    document.body.classList.add('chat-no-scroll');
     scrollBottom();
   } else {
+    unlockViewport();
     el.style.height = '';
-    document.body.classList.remove('chat-no-scroll');
   }
 };
 
@@ -291,7 +309,7 @@ onUnmounted(() => {
   const vv = window.visualViewport;
   if (vv) { vv.removeEventListener('resize', applyChatHeight); vv.removeEventListener('scroll', applyChatHeight); }
   window.removeEventListener('resize', applyChatHeight);
-  document.body.classList.remove('chat-no-scroll');
+  unlockViewport();
 });
 </script>
 
@@ -356,15 +374,5 @@ onUnmounted(() => {
   padding: 10px 12px calc(10px + env(safe-area-inset-bottom));
   border-top: 1px solid rgba(var(--v-theme-on-surface), 0.08);
   background: rgb(var(--v-theme-surface));
-}
-</style>
-
-<style>
-/* Mientras hay una conversación abierta, el documento no hace scroll: así la
-   barra superior y el encabezado de la conversación quedan fijos aunque se
-   abra el teclado (solo se ajusta el área de mensajes). */
-body.chat-no-scroll {
-  overflow: hidden !important;
-  overscroll-behavior: none;
 }
 </style>
