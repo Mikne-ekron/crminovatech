@@ -80,67 +80,16 @@
 
     <!-- KPI Cards Row -->
     <v-row dense>
-      <v-col cols="12" sm="6" md="2">
-        <v-card elevation="0" class="rounded-lg card-dark-blue">
-          <v-card-text class="pa-5">
-            <div class="text-center">
-              <p class="text-subtitle-1 text-light-muted mb-2">Ingresos Hoy</p>
-              <h3 class="text-h3 text-success">{{ formatCurrency(kpis.ingresoHoy) }}</h3>
-            </div>
-          </v-card-text>
-        </v-card>
-      </v-col>
-      
-      <v-col cols="12" sm="6" md="2">
-        <v-card elevation="0" class="rounded-lg card-dark-blue">
-          <v-card-text class="pa-5">
-            <div class="text-center">
-              <p class="text-subtitle-1 text-light-muted mb-2">Egresos Hoy</p>
-              <h3 class="text-h3 text-error">{{ formatCurrency(kpis.egresoHoy) }}</h3>
-            </div>
-          </v-card-text>
-        </v-card>
-      </v-col>
-      
-      <v-col cols="12" sm="6" md="2">
-        <v-card elevation="0" class="rounded-lg card-dark-blue">
-          <v-card-text class="pa-5">
-            <div class="text-center">
-              <p class="text-subtitle-1 text-light-muted mb-2">Ingreso Mensual</p>
-              <h3 class="text-h4 text-success">{{ formatCurrency(kpis.ingresoMes) }}</h3>
-            </div>
-          </v-card-text>
-        </v-card>
-      </v-col>
-      
-      <v-col cols="12" sm="6" md="2">
-        <v-card elevation="0" class="rounded-lg card-dark-blue">
-          <v-card-text class="pa-5">
-            <div class="text-center">
-              <p class="text-subtitle-1 text-light-muted mb-2">Egreso Mensual</p>
-              <h3 class="text-h4 text-error">{{ formatCurrency(kpis.egresoMes) }}</h3>
-            </div>
-          </v-card-text>
-        </v-card>
-      </v-col>
-      
-      <v-col cols="12" sm="6" md="2">
-        <v-card elevation="0" class="rounded-lg card-dark-blue">
-          <v-card-text class="pa-5">
-            <div class="text-center">
-              <p class="text-subtitle-1 text-light-muted mb-2">Ingreso Anual</p>
-              <h3 class="text-h4 text-success">{{ formatCurrency(kpis.ingresoAnio) }}</h3>
-            </div>
-          </v-card-text>
-        </v-card>
-      </v-col>
-      
-      <v-col cols="12" sm="6" md="2">
-        <v-card elevation="0" class="rounded-lg card-dark-blue">
-          <v-card-text class="pa-5">
-            <div class="text-center">
-              <p class="text-subtitle-1 text-light-muted mb-2">Egreso Anual</p>
-              <h3 class="text-h4 text-error">{{ formatCurrency(kpis.egresoAnio) }}</h3>
+      <v-col v-for="k in kpiCards" :key="k.label" cols="6" sm="4" md="2">
+        <v-card elevation="0" class="rounded-lg card-dark-blue kpi-card"
+          :class="k.type === 'in' ? 'kpi-in' : 'kpi-out'">
+          <v-card-text class="pa-4 text-center">
+            <v-avatar :color="k.type === 'in' ? 'success' : 'error'" variant="tonal" size="40" class="mb-2">
+              <v-icon>{{ k.type === 'in' ? 'mdi-trending-up' : 'mdi-trending-down' }}</v-icon>
+            </v-avatar>
+            <p class="text-caption text-light-muted mb-1 font-weight-medium">{{ k.label }}</p>
+            <div class="kpi-value" :class="k.type === 'in' ? 'text-success' : 'text-error'">
+              {{ formatCurrency(k.value) }}
             </div>
           </v-card-text>
         </v-card>
@@ -831,6 +780,14 @@ const fetchKpis = async () => {
         console.error('Error cargando KPIs', e);
     }
 };
+const kpiCards = computed(() => [
+    { label: 'Ingresos Hoy', value: kpis.value.ingresoHoy, type: 'in' },
+    { label: 'Egresos Hoy', value: kpis.value.egresoHoy, type: 'out' },
+    { label: 'Ingreso Mensual', value: kpis.value.ingresoMes, type: 'in' },
+    { label: 'Egreso Mensual', value: kpis.value.egresoMes, type: 'out' },
+    { label: 'Ingreso Anual', value: kpis.value.ingresoAnio, type: 'in' },
+    { label: 'Egreso Anual', value: kpis.value.egresoAnio, type: 'out' },
+]);
 
 const dialogTitle = computed(() => {
     if (dialog.value.type === 'ingreso') return 'Registrar Ingreso';
@@ -901,6 +858,15 @@ onMounted(() => {
   font-size: 12px; padding-inline: 8px !important;
 }
 .hist-table :deep(th .d-flex) { overflow: visible; }
+
+/* ============ Indicadores de flujo (KPIs) ============ */
+.kpi-card { transition: transform 0.2s ease, box-shadow 0.2s ease; border-bottom: 3px solid transparent; }
+.kpi-card:hover { transform: translateY(-3px); }
+.kpi-value { font-size: 1.15rem; font-weight: 700; line-height: 1.25; white-space: nowrap; letter-spacing: -0.3px; }
+.kpi-in  { box-shadow: 0 8px 20px rgba(var(--v-theme-success), 0.22) !important; border-bottom-color: rgb(var(--v-theme-success)); }
+.kpi-out { box-shadow: 0 8px 20px rgba(var(--v-theme-error), 0.22) !important; border-bottom-color: rgb(var(--v-theme-error)); }
+.kpi-in:hover  { box-shadow: 0 12px 26px rgba(var(--v-theme-success), 0.32) !important; }
+.kpi-out:hover { box-shadow: 0 12px 26px rgba(var(--v-theme-error), 0.32) !important; }
 
 /* ============ Modales de captura: efecto glass adaptado al tema ============ */
 .capture-glass {
