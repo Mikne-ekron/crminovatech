@@ -148,55 +148,106 @@
     </v-row>
 
     <v-card class="mt-4 rounded-lg card-dark-blue" elevation="0">
-      <v-card-title class="d-flex align-center py-3 px-4 header-dark-blue border-b-dark">
+      <v-card-title class="d-flex align-center flex-wrap ga-2 py-3 px-4 header-dark-blue border-b-dark">
         <v-icon icon="mdi-history" class="mr-2 text-primary"></v-icon>
         <span class="font-weight-bold">Historial de Operaciones</span>
         <v-spacer></v-spacer>
-        <v-chip color="primary" variant="flat" size="large">
-            Saldo Global Actual: {{ formatCurrency(globalBalance) }}
-        </v-chip>
+        <v-text-field v-model="histSearch" density="compact" variant="solo-filled" flat hide-details
+          placeholder="Buscar en la tabla…" prepend-inner-icon="mdi-magnify" style="max-width:240px" class="flex-grow-0"></v-text-field>
+        <v-chip color="primary" variant="flat">Saldo: {{ formatCurrency(globalBalance) }}</v-chip>
       </v-card-title>
-      
+
       <v-data-table
         :headers="headers"
-        :items="transactionsWithBalance"
+        :items="historialFiltrado"
         item-value="id"
         density="compact"
-        class="bg-transparent dark-table"
+        class="bg-transparent dark-table hist-table"
         :sort-by="[{ key: 'fecha', order: 'desc' }]"
         hover
       >
+        <!-- Filtros por columna -->
+        <template v-slot:header.tipo="{ column }">
+          <div class="d-flex align-center">
+            <span>{{ column.title }}</span>
+            <v-menu :close-on-content-click="false" location="bottom">
+              <template v-slot:activator="{ props }">
+                <v-btn v-bind="props" :color="histFilters.tipo ? 'primary' : ''" icon size="x-small" variant="text" class="ml-1"><v-icon size="15">mdi-filter-variant</v-icon></v-btn>
+              </template>
+              <v-list density="compact" min-width="150">
+                <v-list-item :active="!histFilters.tipo" @click="histFilters.tipo = null"><v-list-item-title>Todos</v-list-item-title></v-list-item>
+                <v-list-item v-for="t in tiposMovimiento" :key="t" :active="histFilters.tipo === t" @click="histFilters.tipo = t"><v-list-item-title>{{ t }}</v-list-item-title></v-list-item>
+              </v-list>
+            </v-menu>
+          </div>
+        </template>
+        <template v-slot:header.concepto="{ column }">
+          <div class="d-flex align-center">
+            <span>{{ column.title }}</span>
+            <v-menu :close-on-content-click="false" location="bottom">
+              <template v-slot:activator="{ props }">
+                <v-btn v-bind="props" :color="histFilters.concepto ? 'primary' : ''" icon size="x-small" variant="text" class="ml-1"><v-icon size="15">mdi-filter-variant</v-icon></v-btn>
+              </template>
+              <v-card min-width="230" class="pa-2"><v-text-field v-model="histFilters.concepto" label="Contiene…" density="compact" variant="outlined" hide-details clearable autofocus></v-text-field></v-card>
+            </v-menu>
+          </div>
+        </template>
+        <template v-slot:header.sobre_display="{ column }">
+          <div class="d-flex align-center">
+            <span>{{ column.title }}</span>
+            <v-menu :close-on-content-click="false" location="bottom">
+              <template v-slot:activator="{ props }">
+                <v-btn v-bind="props" :color="histFilters.sobre_display ? 'primary' : ''" icon size="x-small" variant="text" class="ml-1"><v-icon size="15">mdi-filter-variant</v-icon></v-btn>
+              </template>
+              <v-card min-width="230" class="pa-2"><v-text-field v-model="histFilters.sobre_display" label="Contiene…" density="compact" variant="outlined" hide-details clearable autofocus></v-text-field></v-card>
+            </v-menu>
+          </div>
+        </template>
+        <template v-slot:header.categoria="{ column }">
+          <div class="d-flex align-center">
+            <span>{{ column.title }}</span>
+            <v-menu :close-on-content-click="false" location="bottom">
+              <template v-slot:activator="{ props }">
+                <v-btn v-bind="props" :color="histFilters.categoria ? 'primary' : ''" icon size="x-small" variant="text" class="ml-1"><v-icon size="15">mdi-filter-variant</v-icon></v-btn>
+              </template>
+              <v-card min-width="230" class="pa-2"><v-text-field v-model="histFilters.categoria" label="Contiene…" density="compact" variant="outlined" hide-details clearable autofocus></v-text-field></v-card>
+            </v-menu>
+          </div>
+        </template>
+        <template v-slot:header.usuario="{ column }">
+          <div class="d-flex align-center">
+            <span>{{ column.title }}</span>
+            <v-menu :close-on-content-click="false" location="bottom">
+              <template v-slot:activator="{ props }">
+                <v-btn v-bind="props" :color="histFilters.usuario ? 'primary' : ''" icon size="x-small" variant="text" class="ml-1"><v-icon size="15">mdi-filter-variant</v-icon></v-btn>
+              </template>
+              <v-card min-width="230" class="pa-2"><v-text-field v-model="histFilters.usuario" label="Contiene…" density="compact" variant="outlined" hide-details clearable autofocus></v-text-field></v-card>
+            </v-menu>
+          </div>
+        </template>
+
+        <!-- Celdas -->
+        <template v-slot:item.fecha="{ item }"><span class="text-light-muted">{{ formatDate(item.fecha) }}</span></template>
+        <template v-slot:item.tipo="{ item }">
+           <v-chip size="x-small" :color="getTypeColor(item.tipo)" class="font-weight-bold" variant="tonal">{{ item.tipo }}</v-chip>
+        </template>
+        <template v-slot:item.concepto="{ item }"><span :title="item.concepto">{{ item.concepto }}</span></template>
+        <template v-slot:item.sobre_display="{ item }"><span :title="item.sobre_display">{{ item.sobre_display }}</span></template>
+        <template v-slot:item.categoria="{ item }">
+          <span :title="(item.categoria && item.categoria !== '-' ? item.categoria : '') + (item.subcategoria ? ' / ' + item.subcategoria : '')">
+            {{ item.categoria && item.categoria !== '-' ? item.categoria : '—' }}<span v-if="item.subcategoria" class="text-light-muted"> / {{ item.subcategoria }}</span>
+          </span>
+        </template>
+        <template v-slot:item.monto="{ item }"><span class="font-weight-bold">{{ formatCurrency(item.monto) }}</span></template>
         <template v-slot:item.ingreso="{ item }">
           <span v-if="item.ingreso > 0" class="text-success font-weight-bold">+{{ formatCurrency(item.ingreso) }}</span>
           <span v-else class="text-light-muted">-</span>
         </template>
-
         <template v-slot:item.egreso="{ item }">
           <span v-if="item.egreso > 0" class="text-error font-weight-bold">-{{ formatCurrency(item.egreso) }}</span>
           <span v-else class="text-light-muted">-</span>
         </template>
-
-        <template v-slot:item.saldo="{ item }">
-           <strong class="text-primary">{{ formatCurrency(item.saldo) }}</strong>
-        </template>
-
-        <template v-slot:item.fecha="{ item }">
-           <span class="text-light-muted">{{ formatDate(item.fecha) }}</span>
-        </template>
-        
-        <template v-slot:item.tipo="{ item }">
-           <v-chip size="x-small" :color="getTypeColor(item.tipo)" class="font-weight-bold" variant="tonal">{{ item.tipo }}</v-chip>
-        </template>
-
-        <template v-slot:item.categoria="{ item }">
-          <span>{{ item.categoria && item.categoria !== '-' ? item.categoria : '—' }}</span>
-          <span v-if="item.subcategoria" class="text-light-muted"> / {{ item.subcategoria }}</span>
-        </template>
-
-        <template v-slot:item.monto="{ item }">
-          <span class="font-weight-bold">{{ formatCurrency(item.monto) }}</span>
-        </template>
-
+        <template v-slot:item.saldo="{ item }"><strong class="text-primary">{{ formatCurrency(item.saldo) }}</strong></template>
       </v-data-table>
     </v-card>
 
@@ -560,16 +611,40 @@ const onRowSelectFactura = (_event, row) => {
 const transactions = ref([]);
 
 const headers = [
-    { title: 'Fecha', key: 'fecha', align: 'start', width: '100px' },
+    { title: 'Fecha', key: 'fecha', align: 'start', width: '150px' },
+    { title: 'Tipo', key: 'tipo', width: '92px' },
     { title: 'Concepto', key: 'concepto' },
-    { title: 'Sobre / Ruta', key: 'sobre_display' },
-    { title: 'Categoría', key: 'categoria' },
-    { title: 'Monto Op.', key: 'monto', align: 'end' }, 
-    { title: 'Ingreso', key: 'ingreso', align: 'end' },
-    { title: 'Egreso', key: 'egreso', align: 'end' },
-    { title: 'Saldo Global', key: 'saldo', align: 'end' },
-    { title: 'Usuario', key: 'usuario' },
+    { title: 'Sobre / Ruta', key: 'sobre_display', width: '150px' },
+    { title: 'Categoría', key: 'categoria', width: '140px' },
+    { title: 'Monto Op.', key: 'monto', align: 'end', width: '108px' },
+    { title: 'Ingreso', key: 'ingreso', align: 'end', width: '108px' },
+    { title: 'Egreso', key: 'egreso', align: 'end', width: '108px' },
+    { title: 'Saldo', key: 'saldo', align: 'end', width: '112px' },
+    { title: 'Usuario', key: 'usuario', width: '100px' },
 ];
+
+// Búsqueda y filtros por columna del historial
+const histSearch = ref('');
+const histFilters = ref({ tipo: null, concepto: '', sobre_display: '', categoria: '', usuario: '' });
+const tiposMovimiento = ['Ingreso', 'Egreso', 'Traspaso'];
+const historialFiltrado = computed(() => {
+    const q = histSearch.value.trim().toLowerCase();
+    const f = histFilters.value;
+    const inc = (val, term) => String(val ?? '').toLowerCase().includes(String(term).toLowerCase());
+    return transactionsWithBalance.value.filter(t => {
+        if (f.tipo && t.tipo !== f.tipo) return false;
+        if (f.concepto && !inc(t.concepto, f.concepto)) return false;
+        if (f.sobre_display && !inc(t.sobre_display, f.sobre_display)) return false;
+        if (f.categoria && !inc(t.categoria, f.categoria)) return false;
+        if (f.usuario && !inc(t.usuario, f.usuario)) return false;
+        if (q) {
+            const hay = [t.concepto, t.tipo, t.sobre_display, t.categoria, t.subcategoria, t.usuario, formatDate(t.fecha)]
+                .map(x => String(x ?? '').toLowerCase()).join(' ');
+            if (!hay.includes(q)) return false;
+        }
+        return true;
+    });
+});
 
 // --- API: CARGAR DATOS ---
 const fetchOperations = async () => {
@@ -763,4 +838,12 @@ onMounted(() => {
   padding-inline: 8px !important;
 }
 .factura-table :deep(tbody tr) { cursor: pointer; }
+
+/* Historial de operaciones: anchos fijos, sin scroll horizontal */
+.hist-table :deep(table) { table-layout: fixed; width: 100%; }
+.hist-table :deep(th), .hist-table :deep(td) {
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  font-size: 12px; padding-inline: 8px !important;
+}
+.hist-table :deep(th .d-flex) { overflow: visible; }
 </style>
