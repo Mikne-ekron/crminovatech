@@ -50,7 +50,7 @@ const routes = [
         children: [
           { path: '', redirect: { name: 'InovaHome' } },
           { path: 'home', name: 'InovaHome', component: () => import('@/views/inovaos/InovaHome.vue') },
-          { path: 'tareas', name: 'InovaTareas', component: () => import('@/views/inovaos/InovaTareas.vue') },
+          { path: 'pendientes', name: 'InovaPendientes', component: () => import('@/views/inovaos/InovaPendientes.vue') },
           { path: 'tablero', name: 'InovaTablero', component: () => import('@/views/inovaos/InovaTablero.vue') },
           { path: 'crear', name: 'InovaCrear', component: () => import('@/views/inovaos/InovaCrear.vue') },
           { path: 'metricas', name: 'InovaMetricas', component: () => import('@/views/inovaos/InovaMetricas.vue') },

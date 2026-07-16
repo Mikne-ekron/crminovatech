@@ -25,8 +25,8 @@
         <v-col cols="12" sm="7">
           <v-card border elevation="0" class="rounded-xl">
             <v-list class="py-1">
-              <v-list-item v-for="s in SEMAFORO" :key="s.key">
-                <template #prepend><span class="sem-dot" :style="{ background: s.color }"></span></template>
+              <v-list-item v-for="s in SEMAFORO_TABLERO" :key="s.key">
+                <template #prepend><span class="sem-dot" :style="{ background: ST_HEX[s.key] }"></span></template>
                 <v-list-item-title class="text-body-2">{{ s.label }}</v-list-item-title>
                 <template #append><span class="font-weight-bold">{{ store.resumen.semaforo[s.key] || 0 }}</span></template>
               </v-list-item>
@@ -43,22 +43,22 @@
 <script setup>
 import { computed, onMounted } from 'vue';
 import { useInovaosStore } from '@/stores/inovaos';
-import { SEMAFORO } from '@/views/inovaos/inova-helpers';
+import { SEMAFORO_TABLERO, ST_HEX } from '@/views/inovaos/inova-helpers';
 
 const store = useInovaosStore();
-const total = computed(() => SEMAFORO.reduce((a, s) => a + (store.resumen.semaforo[s.key] || 0), 0));
+const total = computed(() => SEMAFORO_TABLERO.reduce((a, s) => a + (store.resumen.semaforo[s.key] || 0), 0));
 
 const segmentos = computed(() => {
   const t = total.value || 1;
   let acc = 0;
-  return SEMAFORO
+  return SEMAFORO_TABLERO
     .map((s) => ({ ...s, n: store.resumen.semaforo[s.key] || 0 }))
     .filter((s) => s.n > 0)
     .map((s) => {
       const pct = (s.n / t) * 100;
       const offset = 25 - acc;
       acc += pct;
-      return { pct, offset, color: s.color };
+      return { pct, offset, color: ST_HEX[s.key] };
     });
 });
 

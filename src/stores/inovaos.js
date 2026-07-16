@@ -7,14 +7,17 @@ import { useAuthStore } from '@/stores/auth';
 
 export const useInovaosStore = defineStore('inovaos', {
   state: () => ({
-    pendientes: [],
+    pendientes: [],       // activos
+    archivados: [],
+    archivadosCargados: false,
     usuarios: [],
-    myId: null,          // id del usuario actual dentro de InovaOS (mapeado por correo)
+    myId: null,           // id del usuario actual dentro de InovaOS (mapeado por correo)
     myRol: null,
     loading: false,
-    verArchivados: false,
+    // Pila seleccionada en Pendientes (la fija Inicio al tocar una tarjeta del semáforo)
+    filtro: 'inmediata',
     // Detalle (drawer compartido entre submenús)
-    detalle: null,       // { pendiente, historial, checklist, evidencias }
+    detalle: null,        // { pendiente, historial, checklist, evidencias }
     loadingDetalle: false,
     drawerOpen: false,
     // Tablero / métricas
@@ -30,6 +33,7 @@ export const useInovaosStore = defineStore('inovaos', {
   },
   actions: {
     notify(text, color = 'success') { this.snack = { show: true, text, color }; },
+    setFiltro(f) { this.filtro = f; },
 
     async fetchUsuarios() {
       try {
@@ -44,12 +48,17 @@ export const useInovaosStore = defineStore('inovaos', {
     async fetchPendientes() {
       this.loading = true;
       try {
-        const { data } = await axios.get('/inovaos/pendientes', {
-          params: this.verArchivados ? { archivados: 1 } : {},
-        });
+        const { data } = await axios.get('/inovaos/pendientes');
         this.pendientes = data || [];
       } catch (e) { this.pendientes = []; }
       finally { this.loading = false; }
+    },
+    async fetchArchivados() {
+      try {
+        const { data } = await axios.get('/inovaos/pendientes', { params: { archivados: 1 } });
+        this.archivados = data || [];
+        this.archivadosCargados = true;
+      } catch (e) { /* silencioso */ }
     },
     async fetchResumen() {
       this.loadingResumen = true;
@@ -78,7 +87,14 @@ export const useInovaosStore = defineStore('inovaos', {
     async abrirDetalle(id) { this.drawerOpen = true; this.detalle = null; await this.fetchDetalle(id); },
     cerrarDetalle() { this.drawerOpen = false; },
 
-    // --- Escrituras (dejan propagar el error para mostrar el mensaje del servidor) ---
+    // Refresco de lo que esté cargado (activos + resumen; archivados si ya se vieron).
+    async refrescar() {
+      const tasks = [this.fetchPendientes(), this.fetchResumen()];
+      if (this.archivadosCargados) tasks.push(this.fetchArchivados());
+      await Promise.all(tasks);
+    },
+
+    // --- Escrituras (propagan el error para mostrar el mensaje del servidor) ---
     async crear(payload) {
       const { data } = await axios.post('/inovaos/pendientes', payload);
       await this.refrescar();
@@ -100,12 +116,6 @@ export const useInovaosStore = defineStore('inovaos', {
       await axios.delete(`/inovaos/pendientes/${id}`);
       this.detalle = null; this.drawerOpen = false;
       await this.refrescar();
-    },
-    // Refresco ligero de lo que esté cargado.
-    async refrescar() {
-      const tasks = [this.fetchPendientes()];
-      tasks.push(this.fetchResumen());
-      await Promise.all(tasks);
     },
     // Checklist (usa ?item= como la API de InovaOS)
     async addChecklist(pendienteId, texto) {

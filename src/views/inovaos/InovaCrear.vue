@@ -27,7 +27,7 @@ const crear = async (payload) => {
   try {
     await store.crear(payload);
     store.notify('Pendiente creado');
-    router.push('/app/inovaos/tareas');
+    router.push('/app/inovaos/pendientes');
   } catch (err) { store.notify(msgError(err), 'error'); }
   finally { guardando.value = false; }
 };
