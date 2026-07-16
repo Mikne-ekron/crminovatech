@@ -1,5 +1,5 @@
 <template>
-  <div class="h-100">
+  <div class="h-100 inovaos-module">
     <div v-if="loadingInit" class="text-center py-16"><v-progress-circular indeterminate color="primary" /></div>
 
     <v-container v-else-if="!store.habilitado" class="py-8" style="max-width:640px">
@@ -39,6 +39,7 @@ import { useAuthStore } from '@/stores/auth';
 import { msgError } from '@/views/inovaos/inova-helpers';
 import InovaDetalle from '@/components/inovaos/InovaDetalle.vue';
 import InovaForm from '@/components/inovaos/InovaForm.vue';
+import '@/views/inovaos/inovaos.css';
 
 const store = useInovaosStore();
 const authStore = useAuthStore();

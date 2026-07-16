@@ -1,7 +1,7 @@
 <template>
   <v-container class="py-6" style="max-width:760px">
     <h1 class="text-h5 font-weight-bold mb-1 d-flex align-center ga-2">
-      <v-icon color="primary">mdi-chart-donut</v-icon> Tablero
+      <v-icon color="#5b5bd6">mdi-chart-donut</v-icon> Tablero
     </h1>
     <div class="text-body-2 text-medium-emphasis mb-5">Distribución de tus pendientes por estado de vencimiento.</div>
 
@@ -23,8 +23,8 @@
           </svg>
         </v-col>
         <v-col cols="12" sm="7">
-          <v-card border elevation="0" class="rounded-xl">
-            <v-list class="py-1">
+          <v-card class="iv-card" flat>
+            <v-list class="py-1 bg-transparent">
               <v-list-item v-for="s in SEMAFORO_TABLERO" :key="s.key">
                 <template #prepend><span class="sem-dot" :style="{ background: ST_HEX[s.key] }"></span></template>
                 <v-list-item-title class="text-body-2">{{ s.label }}</v-list-item-title>

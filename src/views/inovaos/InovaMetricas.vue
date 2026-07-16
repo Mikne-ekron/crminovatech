@@ -1,7 +1,7 @@
 <template>
   <v-container class="py-6" style="max-width:1100px">
     <h1 class="text-h5 font-weight-bold mb-1 d-flex align-center ga-2">
-      <v-icon color="primary">mdi-chart-bar</v-icon> Métricas
+      <v-icon color="#5b5bd6">mdi-chart-bar</v-icon> Métricas
     </h1>
     <div class="text-body-2 text-medium-emphasis mb-5">
       {{ store.metricas.direccion ? 'Desempeño de cada colaborador.' : 'Tu desempeño como responsable.' }}
@@ -14,9 +14,9 @@
 
     <v-row v-else dense>
       <v-col v-for="c in store.metricas.colaboradores" :key="c.id" cols="12" md="6">
-        <v-card border elevation="0" class="rounded-xl pa-4 h-100">
+        <div class="iv-card pa-4 h-100">
           <div class="d-flex align-center ga-3 mb-3">
-            <v-avatar color="primary" size="42"><span class="text-white font-weight-bold">{{ inicial(c.nombre) }}</span></v-avatar>
+            <v-avatar color="#5b5bd6" size="42"><span class="text-white font-weight-bold">{{ inicial(c.nombre) }}</span></v-avatar>
             <div>
               <div class="font-weight-bold">{{ c.nombre }}</div>
               <div class="text-caption text-medium-emphasis">{{ c.total }} asignados · {{ c.completados }} completados</div>
@@ -44,7 +44,7 @@
               <div class="text-caption text-medium-emphasis">Evidencia</div>
             </v-col>
           </v-row>
-        </v-card>
+        </div>
       </v-col>
     </v-row>
   </v-container>

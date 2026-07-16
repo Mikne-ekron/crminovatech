@@ -1,10 +1,10 @@
 <template>
   <v-navigation-drawer v-model="store.drawerOpen" location="right" temporary touchless width="440">
     <template v-if="d">
-      <div class="d-flex align-center justify-space-between px-4 py-3">
+      <div class="d-flex align-center justify-space-between px-4 py-3" :style="{ background: ST_HEX[estatusColor(d)] + '14' }">
         <div class="d-flex align-center ga-2">
           <span class="st-dot" :style="{ background: ST_HEX[estatusColor(d)] }"></span>
-          <v-chip size="small" variant="tonal">{{ etiquetaEstatus(d.estatus) }}</v-chip>
+          <span class="text-body-2 font-weight-bold" :style="{ color: ST_HEX[estatusColor(d)] }">{{ etiquetaEstatus(d.estatus) }}</span>
         </div>
         <v-btn icon="mdi-close" size="small" variant="text" @click="store.cerrarDetalle()"></v-btn>
       </div>
@@ -30,7 +30,7 @@
 
         <!-- Acciones -->
         <div v-if="acciones.length" class="d-flex flex-wrap ga-2 my-3">
-          <v-btn v-for="a in acciones" :key="a.id" :color="a.color || 'primary'" size="small" :variant="a.fill ? 'flat' : 'tonal'" :loading="cargando === a.id" @click="hacer(a)">{{ a.texto }}</v-btn>
+          <v-btn v-for="a in acciones" :key="a.id" :color="a.color || '#5b5bd6'" size="small" :variant="a.fill ? 'flat' : 'tonal'" :loading="cargando === a.id" elevation="0" @click="hacer(a)">{{ a.texto }}</v-btn>
         </div>
         <div v-else-if="motivo" class="text-caption text-medium-emphasis my-2">{{ motivo }}</div>
 

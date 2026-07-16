@@ -25,7 +25,7 @@
 
     <div class="d-flex justify-end ga-2 mt-1">
       <slot name="pre-actions"></slot>
-      <v-btn color="primary" :loading="loading" :disabled="!form.titulo.trim()" @click="submit">{{ textoBoton }}</v-btn>
+      <v-btn class="iv-btn-accent" :loading="loading" :disabled="!form.titulo.trim()" @click="submit" elevation="0">{{ textoBoton }}</v-btn>
     </div>
   </div>
 </template>
