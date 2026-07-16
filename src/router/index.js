@@ -44,6 +44,11 @@ const routes = [
         name: 'Notes',
         component: () => import('@/views/Notes.vue')
       },
+      {
+        path: 'inovaos',
+        name: 'InovaOS',
+        component: () => import('@/views/inovaos/InovaOS.vue')
+      },
 
       // --- TESORERÍA ---
 
