@@ -10,16 +10,27 @@ export const useInovaosStore = defineStore('inovaos', {
     pendientes: [],
     usuarios: [],
     myId: null,          // id del usuario actual dentro de InovaOS (mapeado por correo)
+    myRol: null,
     loading: false,
+    verArchivados: false,
+    // Detalle (drawer compartido entre submenús)
     detalle: null,       // { pendiente, historial, checklist, evidencias }
     loadingDetalle: false,
-    verArchivados: false,
+    drawerOpen: false,
+    // Tablero / métricas
+    resumen: { semaforo: {}, proximos: [] },
+    loadingResumen: false,
+    metricas: { direccion: false, colaboradores: [] },
+    loadingMetricas: false,
+    // Notificación compartida
+    snack: { show: false, text: '', color: 'success' },
   }),
   getters: {
-    // ¿El usuario actual existe en InovaOS? (si no, no puede operar)
     habilitado: (s) => s.myId != null,
   },
   actions: {
+    notify(text, color = 'success') { this.snack = { show: true, text, color }; },
+
     async fetchUsuarios() {
       try {
         const { data } = await axios.get('/inovaos/usuarios');
@@ -27,6 +38,7 @@ export const useInovaosStore = defineStore('inovaos', {
         const email = (useAuthStore().user?.email || '').toLowerCase();
         const me = this.usuarios.find((u) => (u.email || '').toLowerCase() === email);
         this.myId = me ? Number(me.id) : null;
+        this.myRol = me ? me.rol : null;
       } catch (e) { /* silencioso */ }
     },
     async fetchPendientes() {
@@ -39,6 +51,22 @@ export const useInovaosStore = defineStore('inovaos', {
       } catch (e) { this.pendientes = []; }
       finally { this.loading = false; }
     },
+    async fetchResumen() {
+      this.loadingResumen = true;
+      try {
+        const { data } = await axios.get('/inovaos/tablero');
+        this.resumen = { semaforo: data.semaforo || {}, proximos: data.proximos || [] };
+      } catch (e) { this.resumen = { semaforo: {}, proximos: [] }; }
+      finally { this.loadingResumen = false; }
+    },
+    async fetchMetricas() {
+      this.loadingMetricas = true;
+      try {
+        const { data } = await axios.get('/inovaos/tablero', { params: { metricas: 1 } });
+        this.metricas = { direccion: !!data.direccion, colaboradores: data.colaboradores || [] };
+      } catch (e) { this.metricas = { direccion: false, colaboradores: [] }; }
+      finally { this.loadingMetricas = false; }
+    },
     async fetchDetalle(id) {
       this.loadingDetalle = true;
       try {
@@ -47,15 +75,18 @@ export const useInovaosStore = defineStore('inovaos', {
       } catch (e) { this.detalle = null; }
       finally { this.loadingDetalle = false; }
     },
+    async abrirDetalle(id) { this.drawerOpen = true; this.detalle = null; await this.fetchDetalle(id); },
+    cerrarDetalle() { this.drawerOpen = false; },
+
     // --- Escrituras (dejan propagar el error para mostrar el mensaje del servidor) ---
     async crear(payload) {
       const { data } = await axios.post('/inovaos/pendientes', payload);
-      await this.fetchPendientes();
+      await this.refrescar();
       return data;
     },
     async patch(id, body) {
       const { data } = await axios.patch(`/inovaos/pendientes/${id}`, body);
-      await this.fetchPendientes();
+      await this.refrescar();
       if (this.detalle?.pendiente?.id == id) await this.fetchDetalle(id);
       return data;
     },
@@ -63,23 +94,30 @@ export const useInovaosStore = defineStore('inovaos', {
     editar(id, campos) { return this.patch(id, campos); },
     async archivar(id, val) {
       await axios.patch(`/inovaos/pendientes/${id}`, { archivado: val ? 1 : 0 });
-      await this.fetchPendientes();
+      await this.refrescar();
     },
     async eliminar(id) {
       await axios.delete(`/inovaos/pendientes/${id}`);
-      this.detalle = null;
-      await this.fetchPendientes();
+      this.detalle = null; this.drawerOpen = false;
+      await this.refrescar();
     },
+    // Refresco ligero de lo que esté cargado.
+    async refrescar() {
+      const tasks = [this.fetchPendientes()];
+      tasks.push(this.fetchResumen());
+      await Promise.all(tasks);
+    },
+    // Checklist (usa ?item= como la API de InovaOS)
     async addChecklist(pendienteId, texto) {
       await axios.post('/inovaos/checklist', { pendiente_id: pendienteId, texto });
       await this.fetchDetalle(pendienteId);
     },
     async toggleChecklist(itemId, completado, pendienteId) {
-      await axios.patch(`/inovaos/checklist/${itemId}`, { completado: completado ? 1 : 0 });
+      await axios.patch('/inovaos/checklist', { completado: completado ? 1 : 0 }, { params: { item: itemId } });
       await this.fetchDetalle(pendienteId);
     },
     async delChecklist(itemId, pendienteId) {
-      await axios.delete(`/inovaos/checklist/${itemId}`);
+      await axios.delete('/inovaos/checklist', { params: { item: itemId } });
       await this.fetchDetalle(pendienteId);
     },
   },

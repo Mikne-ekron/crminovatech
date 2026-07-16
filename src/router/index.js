@@ -46,8 +46,15 @@ const routes = [
       },
       {
         path: 'inovaos',
-        name: 'InovaOS',
-        component: () => import('@/views/inovaos/InovaOS.vue')
+        component: () => import('@/views/inovaos/InovaLayout.vue'),
+        children: [
+          { path: '', redirect: { name: 'InovaHome' } },
+          { path: 'home', name: 'InovaHome', component: () => import('@/views/inovaos/InovaHome.vue') },
+          { path: 'tareas', name: 'InovaTareas', component: () => import('@/views/inovaos/InovaTareas.vue') },
+          { path: 'tablero', name: 'InovaTablero', component: () => import('@/views/inovaos/InovaTablero.vue') },
+          { path: 'crear', name: 'InovaCrear', component: () => import('@/views/inovaos/InovaCrear.vue') },
+          { path: 'metricas', name: 'InovaMetricas', component: () => import('@/views/inovaos/InovaMetricas.vue') },
+        ]
       },
 
       // --- TESORERÍA ---

@@ -17,6 +17,8 @@ declare module 'vue' {
     CreateOpportunityDialog: typeof import('./src/components/crm/CreateOpportunityDialog.vue')['default']
     CustomerQuotesDialog: typeof import('./src/components/crm/CustomerQuotesDialog.vue')['default']
     HelloWorld: typeof import('./src/components/HelloWorld.vue')['default']
+    InovaDetalle: typeof import('./src/components/inovaos/InovaDetalle.vue')['default']
+    InovaForm: typeof import('./src/components/inovaos/InovaForm.vue')['default']
     InstallPrompt: typeof import('./src/components/shared/InstallPrompt.vue')['default']
     InvoiceDetailDialog: typeof import('./src/components/crm/InvoiceDetailDialog.vue')['default']
     NotificationsDrawer: typeof import('./src/components/shared/NotificationsDrawer.vue')['default']
